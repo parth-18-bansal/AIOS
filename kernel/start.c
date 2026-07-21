@@ -1,3 +1,5 @@
+#include "types.h"
+
 // Register
 // mstatus, mepc, medeleg, mideleg, satp, sie, pmpaddr, pmpcnf
 
