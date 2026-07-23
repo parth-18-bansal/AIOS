@@ -1,5 +1,27 @@
 #include "types.h"
 #include "proc.c"
+#include "riscv.h"
+#include "spinlock.h"
+
+
+void acquire(struct spinlock *lk){
+    push_off();
+    if(holding(lk)){
+        panic("aquire");
+    }
+
+
+}
+
+
+/*
+summary: check does locked is enabled or not
+*/
+int holding(struct spinlock *lk){
+    int r;
+    r = (lk -> locked && lk->cpu == mycpu());
+    return r;
+}
 
 
 /*
@@ -29,4 +51,26 @@ void push_off(void){
         mycpu()->intena = old;
     }
     mycpu()->noff += 1;
+}
+
+/*
+summary: if noff become 1 before running this then enable the interrupts other wise decrease
+the noff value by 1
+*/
+void pop_off(void){
+    struct cpu *c = mycpu();
+
+    if(intr_get()){
+        panic("pop_off - interruptible");
+    }
+
+    if(c->noff < 1){
+        panic("pop_off");
+    }
+
+    c->noff -= 1;
+
+    if(c->noff = 0 && c->intena){
+        intr_on();
+    }
 }
