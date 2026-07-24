@@ -3,12 +3,50 @@
 #include "riscv.h"
 #include "spinlock.h"
 
-
+/*
+summary: it disable the interrupt because it is accessing the shared kernel
+memory which proc's spinlock's locked field, so interrupt should not reschedule the cpu
+after acquring the lock and before releasing the lock.
+And then we are just setting the value of the locked field to on(1).
+*/
 void acquire(struct spinlock *lk){
     push_off();
     if(holding(lk)){
         panic("aquire");
     }
+
+    /*
+    here we are just exchanging the value that is locked will be equal to the 1
+    and it will return the old value. Also __ATOMIC_ACQUIRE will confirm that
+    the instruction after this statement must run after successfully running of
+    this statement, means cpu and compiler sometime to optimisation the execution
+    reorder the code instruction if output remain same after reordering so this thing
+    will say to the cpu and compiler to not reorder and execute instruction after this statement before it
+    */
+    while(__atomic_exchange_n(&lk->locked, 1, __ATOMIC_ACQUIRE) != 0);
+
+    lk->cpu = mycpu();
+}
+
+/*
+summary: just changing the locked value to 0 and decreasing the value of the noff by 1.
+*/
+void release(struct spinlock *lk){
+    if(!holding(lk)){
+        panic("release");
+    }
+
+    lk->cpu = 0;
+    
+    /*
+    setting the value of the locked to 0 and here __ATOMIC_RELEASE make sure that
+    all the instruction before this statement should run before the execution of this statement
+    reording of the instruction should be such that the instruction defined before this not execute
+    after it.
+    */
+    __atomic_store_n(&lk->locked, 0, __ATOMIC_RELEASE);
+
+    pop_off();
 
 
 }

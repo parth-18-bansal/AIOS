@@ -1,5 +1,6 @@
 #include "types.h"
 #include "param.h"
+#include "spinlock.h"
 
 /*
 trapframe is the page where we store user cpu register values
@@ -106,6 +107,7 @@ enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE};
 
 // per process state
 struct proc{
+     struct spinlock lock;
      char name[16]; // process name
      int pid; // process id
 
