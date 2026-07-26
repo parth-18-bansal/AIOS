@@ -3,6 +3,12 @@
 #include "riscv.h"
 #include "spinlock.h"
 
+void initlock(struct spinlock *lk, char *name){
+    lk->name = name;
+    lk->locked =0;
+    lk->cpu = 0;
+}
+
 /*
 summary: it disable the interrupt because it is accessing the shared kernel
 memory which proc's spinlock's locked field, so interrupt should not reschedule the cpu
