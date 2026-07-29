@@ -1,6 +1,7 @@
 #include "types.h"
 #include "param.h"
 #include "spinlock.h"
+#include "riscv.h"
 
 /*
 trapframe is the page where we store user cpu register values
@@ -129,4 +130,12 @@ struct proc{
      code for that process it need the stack and that stack is called the kstack
      */
     uint64 kstack;  // virtual address of the kernel stack
+
+    // it stores the address of the variable which stores the uint64 value
+    pagetable_t pagetable;
+
+    struct proc *parent; //parent process
+    int killed; //if non-zero, have been killed
+    void *chan; // if non zero sleeping on chan
+    int xstate; //exit status to returned to parent's wait
 };

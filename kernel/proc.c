@@ -40,7 +40,11 @@ int allocpid(){
 }
 
 /*
-summary: 
+summary
+1) creating the pointer to the proc struct and setting it value line wise using the for loop
+2) in for loop it is finding first process whose state is UNUSED after that it if found then
+it the found label which set different fields of the proc struct
+3) and then it return the that proc virtual address.
 */
 
 static struct proc * allocproc(void){
@@ -66,11 +70,60 @@ static struct proc * allocproc(void){
         p->pid = allocpid();
         p->state = USED;
 
+        //Allocate the trapframe page
+        /*
+        1) kalloc gives the virtual address of the new page
+        (here physical address because va and pa are directly mapped)
+        so here we are getting a new page and then we are storing it's 
+        address in the p->trapframe. and if kalloc return 0 then it means
+        there is no memory left, so we set all the fields in the proc's struct
+        to zero back
+        */
+        if ((p->trapframe = (struct trapframe *)kalloc()) == 0){
+            freeproc(p);
+            release(&p->lock);
+            return 0;
+        }
+
+
+
         
 
     }
 
 
+}
+
+/*
+summary:- it set the value of all the fields in the proc struct to zero. 
+*/
+static void freeproc(struct proc *p){
+    // here we are freeing the trapframe page if it is occupied
+    if(p->trapframe){
+        kfree((void *)p->trapframe);
+    }
+    p->trapframe = 0;
+
+    if(p->pagetable){
+        proc_freepagetable(p->pagetable, p->sz);
+    }
+
+    p->pagetable = 0;
+    p->sz = 0;
+    p->pid = 0;
+    p->parent = 0;
+    p->name[0] = 0;
+    p->chan = 0;
+    p->killed = 0;
+    p->xstate = 0;
+    p->state=UNUSED;
+}
+
+/*
+summary
+*/
+pagetable_t proc_pagetable(){
+    
 }
 
 /*

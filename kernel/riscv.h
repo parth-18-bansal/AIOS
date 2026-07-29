@@ -15,3 +15,6 @@ static inline void intr_on(){
 static inline void intr_off(){
     c_sstatus(STATUS_SIE);
 }
+
+
+typedef uint64 *pagetable_t;
