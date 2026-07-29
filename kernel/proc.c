@@ -121,9 +121,25 @@ static void freeproc(struct proc *p){
 
 /*
 summary
+1) first it create the empty page for the pagetable using the uvmcreate function
+and storing its address in the pagetable variable.
+2) 
 */
 pagetable_t proc_pagetable(){
-    
+    pagetable_t pagetable;
+
+    // uvmcreate the root page table so here pagetable stores the address 
+    // of the root page table. other levels page tables will be created ondemand 
+    // by the walk function.
+    pagetable = uvmcreate();
+
+    if(pagetable == 0){
+        return 0;
+    }
+
+    if(mappages())
+
+
 }
 
 /*
