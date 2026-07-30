@@ -1,0 +1,2 @@
+// kalloc
+void* kalloc(void);

@@ -137,7 +137,9 @@ pagetable_t proc_pagetable(){
         return 0;
     }
 
-    if(mappages())
+    if(mappages(pagetable, TRAMPOLINE, PGSIZE, (uint64)trampoline, PTE_R | PTE_X) < 0){
+        
+    }
 
 
 }

@@ -2,3 +2,5 @@
 // means in place of the unsigned long i can use uint64 it means same.
 typedef unsigned long uint64;
 typedef unsigned int uint;
+
+typedef uint64 pde_t;

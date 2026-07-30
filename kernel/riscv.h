@@ -30,6 +30,18 @@ and 1L means 64 bit long 1.(L = long)
 */
 #define PTE_V (1L << 0)
 
+/*
+pte = page table entry and each entry in the page table is of 64 bits
+out of 64 bits lower 10 bits are used for flags and rest represent the PPN not PA
+PPN = page number and pa is physical address, now 12 bits are used for the page the offset
+it means that first address of the each page has 12 zeros in the loweres 12 bits, so while storing 
+the PA in the page table we remove those 12 zeros so while converting back it into the PA we have to add
+the 12 zeros in the last that is why we did << 12 
+*/
+#define PTE2PA(pte) (((pte) >> 10) << 12)
+
+#define PA2PTE(pa) ((((uint64)pa) >> 12) << 10)
+
 
 #define PGSHIFT 12 // page offset
 #define PGSIZE 4096 // page size in bytes
