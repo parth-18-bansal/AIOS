@@ -10,6 +10,8 @@ struct proc proc[NPROC];
 struct cpu cpus[NCPU];
 struct spinlock pid_lock;
 
+struct proc *initproc;
+
 int nextpid=1;
 
 extern void forkret(void);
@@ -188,8 +190,9 @@ summary:
 */
 void userinit(void){
     struct proc *p;
-    
-    
+
+    p = allocprod();
+    initproc = p;
 }
 
 
@@ -197,5 +200,5 @@ void userinit(void){
 summary:
 */
 void forkret(void){
-    
+
 }
