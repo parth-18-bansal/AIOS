@@ -6,6 +6,9 @@
 # of the first element is greater than the address of the next element in the stack
 
 
+.section .text
+.global _entry
+
 # so here we are assigning the address of the starting pointer of the stack to sp register
 _entry:
     # load the address of the stack0 label into the sp register
@@ -29,3 +32,6 @@ _entry:
     
     # jump to the start function of start.c
     call start
+
+spin:
+        j spin

@@ -29,6 +29,9 @@ now zeroth is valid bit where 0 means address is not valid and 1 means address i
 and 1L means 64 bit long 1.(L = long)
 */
 #define PTE_V (1L << 0)
+#define PTE_R (1L << 1)
+#define PTE_W (1L << 2)
+#define PTE_X (1L << 3)
 
 /*
 pte = page table entry and each entry in the page table is of 64 bits

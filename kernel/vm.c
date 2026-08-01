@@ -108,5 +108,60 @@ pagetable_t uvmcreate(){
 
 /*
 summary:
-
+it is used to remove the mapping between the pa and va.
+it first empty the the physical page using kfree and then unmap the mapping
 */
+void uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free){
+    uint64 a;
+    pte_t *pte;
+
+    if((va % PGSIZE) != 0){
+        panic("uvmunmap: not aligned");
+    }
+
+    for(a = va; a < va + npages * PGSIZE; a+=PGSIZE){
+        if((pte = walk(pagetable,a,0)) == 0){
+            continue;
+        }
+        if((*pte & PTE_V) == 0){
+            continue;
+        }
+        if(do_free){
+            uint64 pa = PTE2PA(*pte);
+            kfree((void *)pa);
+        }
+        *pte = 0;
+    }
+}
+
+/*
+summary:
+this function delete the pagetable all the level like there are 3 levels so it 
+delete all three level. and if there is any mapping in the leaf pagetable then it give
+error.
+*/
+void freewalk(pagetable_t pagetable){
+    for (int i = 0; i<512; i++){
+        pte_t pte = pagetable[i];
+        if((pte & PTE_V) && (pte & (PTE_R | PTE_W | PTE_X)) == 0){
+            uint64 child = PTE2PA(pte);
+            freewalk((pagetable_t)child);
+            pagetable[i] = 0;
+        }
+        else if(pte & PTE_V){
+            panic("freewalk: leaf");
+        }
+    }
+    kfree((void *)pagetable);
+}
+
+/*
+summary: this function is used to delete all the mappings of the va and pa also then 
+delete the page table at the last
+*/
+void uvmfree(pagetable_t pagetable, uint64 sz){
+    if(sz > 0){
+        uvmunmap(pagetable, 0, PGGROUNDUP(sz) / PGSIZE, 1);
+    }
+    freewalk(pagetable);
+}

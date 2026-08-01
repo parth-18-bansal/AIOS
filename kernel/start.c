@@ -1,4 +1,5 @@
 #include "types.h"
+#include "param.h"
 
 // Register
 // mstatus, mepc, medeleg, mideleg, satp, sie, pmpaddr, pmpcnf
@@ -14,6 +15,12 @@ like handing exception interrupts, giving permission of the memory
 
 // decalaring the function main
 void main();
+
+/*
+_attribute__(aligned(16)), means create that stack such that, it starting address is divisible 
+by 16. it is convention to increase the performance and to integrate the things correctly
+*/
+__attribute__((aligned(16))) char stack0[4096 * NCPU];
 
 void start(){
     // mstatus is the cpu register that stores the status of the cpu, value is of 64 bit

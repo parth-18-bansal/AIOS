@@ -12,6 +12,8 @@ struct spinlock pid_lock;
 
 int nextpid=1;
 
+extern void forkret(void);
+
 /*
 here cpuid should be run with interrupt disable, because let say in mycpu function upto id = cpuid();
 run and then interrupt occur due to which that process now run on cpu 2, in that case id = 1
@@ -86,9 +88,32 @@ static struct proc * allocproc(void){
         }
 
 
+        /*
+        here we are assiging the page table to the process
+        */
+        p->pagetable = proc_pagetable(p);
+        if(p->pagetable == 0){
+            freeproc(p);
+            release(&p->lock);
+            return 0;
+        }
 
-        
+        memset(&p->context, 0, sizeof(p->context));
 
+        /*
+        here ra = return address so it define where should the cpu should return after 
+        executing the kernel function.
+        */
+        p->context.ra = (uint64)forkret;
+
+        /*
+        sp = stack pointer register it store the top of the stack
+        now here stack stores downwared that is why we are adding the PGSIZE in the 
+        p->kstack.
+        */
+        p->context.sp = p->kstack + PGSIZE;
+
+        return p;
     }
 
 
@@ -137,11 +162,25 @@ pagetable_t proc_pagetable(){
         return 0;
     }
 
+
+    /*
+    here we are mapping the va and pa for the trampoline page
+    */
     if(mappages(pagetable, TRAMPOLINE, PGSIZE, (uint64)trampoline, PTE_R | PTE_X) < 0){
-        
+        uvmfree(pagetable, 0);
+        return 0;
     }
 
+    /*
+    here we are mapping the va and pa for the trapframe page
+    */
+    if(mappages(pagetable, TRAPFRAME, PGSIZE, (uint64)(p->trapframe), PTE_R | PTE_W) < 0){
+        uvmummap(pagetable, TRAMPOLINE, 1, 0);
+        uvmfree(pagetable, 0);
+        return 0;
+    }
 
+    return pagetable;
 }
 
 /*
@@ -150,5 +189,13 @@ summary:
 void userinit(void){
     struct proc *p;
     
+    
+}
+
+
+/*
+summary:
+*/
+void forkret(void){
     
 }
