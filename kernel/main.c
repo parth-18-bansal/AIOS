@@ -1,4 +1,3 @@
-
 void main(){
     /*
     summary: up to know entry.S and start.c is running in each cpu core indivitually
@@ -6,6 +5,7 @@ void main(){
     are using the cpuid() == 0
     */
     if (cpuid() == 0){
+        kvminit();  // creates kernel page table
         userinit(); // start first user process
     }
 }

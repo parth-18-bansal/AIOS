@@ -2,6 +2,72 @@
 #include "types.h"
 #include "defs.h"
 
+
+/*
+
+Physical Memory
+
++---------------------------+ 0x80000000
+| Kernel code (.text)       |
++---------------------------+
+| Kernel data (.data/.bss)  |
++---------------------------+
+| End of kernel image       |  <-- end (defined by the linker)
++---------------------------+
+| Free physical pages       |  <-- kalloc() allocates from here
+|                           |
+|                           |
+|                           |
++---------------------------+
+| Remaining RAM             |
++---------------------------+
+PHYSTOP
+
+
+functions with uvm belongs to the user page table and function with kvm belongs to the
+kernel page table. And walk, mappages, walkaddr, copyout, copyin, freewalk are common functions.
+*/
+
+/*
+functions start with kvm maniputates the kernel page table
+*/
+
+
+/*
+it creates kernel page table and page table is directly mapped means va and pa are same
+summary:
+1) first it creates kernel page table using kalloc and memset
+
+*/
+pagetable_t kvmmake(void){
+
+    pagetable_t kpgtbl;
+    kpgtbl = (pagetable_t)kalloc();
+    memset(kpgtbl, 0, PGSIZE);
+
+
+
+}
+
+/*
+summary: it add a mapping in the kernel page table and only used during booting
+*/
+void kvmmap(pagetable_t kpgtbl, uint64 va, uint64 pa, uint64 sz, int perm){
+    if(mappages(kpgtbl, va, sz, pa, perm) != 0){
+        panic("kvmap");
+    }    
+}
+
+/*
+it creates the kernel pagetable, and there is one kernel page table
+and it is shared by all cpu cores.
+*/
+void kvminit(void){
+
+}
+
+
+
 /*
 summary
 1) pagetable: stores the address of the root page table
@@ -90,6 +156,9 @@ int mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm)
 }
 
 
+// UVM = user virtual memory, fuctions starting with uvm manipulates the 
+// user page table
+
 /*
 this function only return a new empty page where we store the pagetable.
 */
@@ -135,6 +204,19 @@ void uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free){
 }
 
 /*
+summary: this function is used to delete all the mappings of the va and pa also then 
+delete the page table at the last
+*/
+void uvmfree(pagetable_t pagetable, uint64 sz){
+    if(sz > 0){
+        uvmunmap(pagetable, 0, PGGROUNDUP(sz) / PGSIZE, 1);
+    }
+    freewalk(pagetable);
+}
+
+
+
+/*
 summary:
 this function delete the pagetable all the level like there are 3 levels so it 
 delete all three level. and if there is any mapping in the leaf pagetable then it give
@@ -155,13 +237,3 @@ void freewalk(pagetable_t pagetable){
     kfree((void *)pagetable);
 }
 
-/*
-summary: this function is used to delete all the mappings of the va and pa also then 
-delete the page table at the last
-*/
-void uvmfree(pagetable_t pagetable, uint64 sz){
-    if(sz > 0){
-        uvmunmap(pagetable, 0, PGGROUNDUP(sz) / PGSIZE, 1);
-    }
-    freewalk(pagetable);
-}
