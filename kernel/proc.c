@@ -1,6 +1,7 @@
 #include "param.h"
 #include "proc.h"
 #include "spinlock.h"
+#include "memlayout.h"
 
 /*
 creating the process array that will stores info about each process
@@ -15,6 +16,29 @@ struct proc *initproc;
 int nextpid=1;
 
 extern void forkret(void);
+
+
+/*
+here we are allocting a page for the process's kernel stack and mapping the va
+and pa of it in the kernel page table
+
+each kernel stack page is followed by a guard page(unmapped empty page)
+*/
+void proc_mapstacks(pagetable_t kpgtbl){
+    struct proc *p;
+
+    for(p = proc; p<&proc[NPROC]; p++){
+        char *pa = kalloc();
+
+        if(pa == 0){
+            panic("kalloc");
+        }
+
+        uint64 va = KSTACK((int)(p-proc));
+
+        kvmmap(kpgtbl, va, (uint64)pa, PGSIZE, PTE_R | PTE_W);
+    }
+}
 
 /*
 here cpuid should be run with interrupt disable, because let say in mycpu function upto id = cpuid();
@@ -31,6 +55,16 @@ struct cpu * mycpu(void){
     struct cpu *c = &cpus[id];
     return c;
 }
+
+// it returns the current proccess which cpu is executing
+struct proc * myproc(void){
+    pushoff();
+    struct cpu *c = mycpu();
+    struct proc *p = c->proc;
+    pop_off();
+    return p;
+}
+
 
 int allocpid(){
     int pid;
@@ -201,4 +235,25 @@ summary:
 */
 void forkret(void){
 
+}
+
+/*
+summary
+*/
+void sched(void){
+    
+}
+
+/*
+summary:
+*/
+void sleep(void *chan, struct spinlock *lk){
+
+}
+
+/*
+summary:
+*/
+void wakeup(void *chan){
+    
 }

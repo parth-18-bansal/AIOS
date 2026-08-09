@@ -1,6 +1,7 @@
 #include "riscv.h"
 #include "types.h"
 #include "defs.h"
+#include "memlayout.h"
 
 
 /*
@@ -33,11 +34,21 @@ functions start with kvm maniputates the kernel page table
 */
 
 
+pagetable_t kernel_pagetable;
+
+
+
+
 /*
 it creates kernel page table and page table is directly mapped means va and pa are same
 summary:
 1) first it creates kernel page table using kalloc and memset
-
+2) then it maps the uart registers with the virutal addresses, uart is use for the input
+output
+3) then it maps the virtio with the virtual address
+4) then it maps the plic hardware 
+5) then kernel code and kernel data then trampoline
+7) then kernel stacks of processes
 */
 pagetable_t kvmmake(void){
 
@@ -45,9 +56,42 @@ pagetable_t kvmmake(void){
     kpgtbl = (pagetable_t)kalloc();
     memset(kpgtbl, 0, PGSIZE);
 
+    /*
+    uart does not have physical page in the ram, pa refer to the uart chip's register
+    */
+    kvmmap(kpgtbl, UART0, UART0, PGSIZE, PTE_R| PTE_W);
+    
+    /*
+    virtio is the virtual disk
+    */
+    kvmmap(kpgtbl, VIRTIO0, VIRTIO0, PGSIZE, PTE_R | PTE_W);
 
+    /*
+    plic is interrupt controller hardware, when any device like disk etc interrupt
+    then that interrupt is first receive by the plic and plic tells cpu
+    about the interupt
+    */
+    kvmmap(kpgtbl, PLIC, PLIC, 0x4000000, PTE_R | PTE_W);
 
+    /*
+    map kernel text executable and read only
+    etext is the end of the kernel code in the memory
+    */
+    kvmmap(kpgtbl, KERNBASE, KERNBASE, (uint64)etext - KERNBASE, PTE_R | PTE_X);
+
+    /*
+    map kernel data and the physical ram we will make use of
+    it represents the ram after the kernel code, this portion contains the kernel data
+    user pages etc
+    */
+    kvmmap(kpgtbl, (uint64)etext, (uint64)etext, PHYSTOP - (uint64)etext, PTE_R | PTE_W);
+
+    kvmmap(kpgtbl, TRAMPOLINE, (uint64)trampoline, PGSIZE, PTE_R | PTE_X);
+
+    proc_mapstacks(kpgtbl);
 }
+
+
 
 /*
 summary: it add a mapping in the kernel page table and only used during booting
@@ -58,12 +102,15 @@ void kvmmap(pagetable_t kpgtbl, uint64 va, uint64 pa, uint64 sz, int perm){
     }    
 }
 
+
+
+
 /*
 it creates the kernel pagetable, and there is one kernel page table
 and it is shared by all cpu cores.
 */
 void kvminit(void){
-
+    kernel_pagetable = kvmmake();
 }
 
 
@@ -156,6 +203,7 @@ int mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm)
 }
 
 
+
 // UVM = user virtual memory, fuctions starting with uvm manipulates the 
 // user page table
 
@@ -174,6 +222,9 @@ pagetable_t uvmcreate(){
     memset(pagetable, 0, PGSIZE);
     return pagetable;
 }
+
+
+
 
 /*
 summary:
@@ -202,6 +253,9 @@ void uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free){
         *pte = 0;
     }
 }
+
+
+
 
 /*
 summary: this function is used to delete all the mappings of the va and pa also then 
