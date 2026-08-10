@@ -1,6 +1,12 @@
 #include "types.h"
 
 
+/*
+########################################################
+                      INTERRUPTS
+########################################################
+*/
+
 // checking interrupt is enable or not
 static inline int intr_get(){
     uint64 x = r_sstatus();
@@ -17,6 +23,44 @@ static inline void intr_off(){
     c_sstatus(STATUS_SIE);
 }
 
+
+/*
+########################################################
+                      SATP REGISTER
+########################################################
+*/
+
+/*
+here we are using sv39 address translation scheme, which is represented by 1000(8) and it is defined
+in the top 4 bits
+*/
+#define SATP_SV39 (8L << 60)
+#define MAKE_SATP(pagetable) (SATP_SV39 | (((uint64)pagetable) >> 12))
+
+static inline void w_satp(uint64 x){
+    asm volatile("csrw satp,%0" : : "r"(x));
+}
+
+static inline uint64 r_satp(){
+    uint64 x;
+    asm volatile("csrr %0, satp" : "=r"(x));
+}
+
+/*
+cpu has TLB which cache the va and pa mapping, this function is use to flush the tlb after changing
+the satp value to new page table.
+*/
+static inline void sfence_vma(){
+    asm volatile("sfence.vam zero, zero" ::: "memory");
+}
+
+
+
+/*
+####################################################################
+                            PAGE TABLE
+####################################################################
+*/
 
 typedef uint64 *pagetable_t;
 typedef uint64 pte_t;

@@ -74,3 +74,6 @@ it is like this:
                  
 */
 #define KSTACK(p) (TRAMPOLINE - ((p)+1) * 2 * PGSIZE)
+
+
+#define TRAPFRAME (TRAMPOLINE - PGSIZE)

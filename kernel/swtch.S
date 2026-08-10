@@ -10,6 +10,11 @@
 # and in the last we are running ret which take the cpu to the new process "ra register",
 # ra = return address, it stores the address of the instruction to which cpu can return.
 
+# sd = store double word, in riscv word = 4 bytes so double word = 8 bytes(64 bits)
+# lly we have sb(store byte), sh(store halfword), sw(store word)
+
+# sd register offset(base address) = stores the value of the register in the base add + offset
+
 .globl swtch
 swtch:
         sd ra, 0(a0)

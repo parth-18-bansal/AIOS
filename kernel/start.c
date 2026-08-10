@@ -1,5 +1,6 @@
 #include "types.h"
 #include "param.h"
+#include "riscv.h"
 
 // Register
 // mstatus, mepc, medeleg, mideleg, satp, sie, pmpaddr, pmpcnf

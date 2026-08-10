@@ -6,6 +6,7 @@ void main(){
     */
     if (cpuid() == 0){
         kvminit();  // creates kernel page table
+        kvminithart(); // turn on paging
         userinit(); // start first user process
     }
 }

@@ -37,7 +37,11 @@ functions start with kvm maniputates the kernel page table
 pagetable_t kernel_pagetable;
 
 
-
+/*
+########################################################
+            KERNEL PAGE TABLE FUNCTIONS
+########################################################
+*/
 
 /*
 it creates kernel page table and page table is directly mapped means va and pa are same
@@ -103,8 +107,6 @@ void kvmmap(pagetable_t kpgtbl, uint64 va, uint64 pa, uint64 sz, int perm){
 }
 
 
-
-
 /*
 it creates the kernel pagetable, and there is one kernel page table
 and it is shared by all cpu cores.
@@ -114,6 +116,29 @@ void kvminit(void){
 }
 
 
+/*
+summary: earlier in the start function we disable the paging, now we have enable the paging
+also set satp register value to the kernel page table. so this function we run after creating
+kernel pagetable(kvminit())
+*/
+void kvminithart(){
+    // wait for any previous writes to the page table memory to finish
+    sfence_vma();
+
+    w_satp(MAKE_SATP(kernel_pagetable));
+
+    // flush the stale entries from the TLB
+    sfence_vma();
+
+}
+
+
+
+/*
+########################################################
+                COMMON FUNCTIONS
+########################################################
+*/
 
 /*
 summary
@@ -203,6 +228,12 @@ int mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm)
 }
 
 
+
+/*
+########################################################
+           USER PAGE TABLE FUNCTIONS
+########################################################
+*/
 
 // UVM = user virtual memory, fuctions starting with uvm manipulates the 
 // user page table
