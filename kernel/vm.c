@@ -300,6 +300,22 @@ void uvmfree(pagetable_t pagetable, uint64 sz){
 }
 
 
+/*
+summary:
+*/
+uint64 uvmalloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz, int xperm){
+
+}
+
+
+/*
+summary:
+*/
+uint64 uvmdealloc(pagetable_t pagetablem, uint64 oldsz, uint64 newsz){
+    
+}
+
+
 
 /*
 summary:
