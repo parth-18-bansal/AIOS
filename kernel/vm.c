@@ -302,17 +302,59 @@ void uvmfree(pagetable_t pagetable, uint64 sz){
 
 /*
 summary:
+1) it is here oldsz < newsz (must)
+2) then it allocate a new page to that process til oldsz < newsz
+3) and map that page to that process via pagetable
 */
 uint64 uvmalloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz, int xperm){
+    char *mem;
+    uint64 a;
+
+    if(oldsz > newsz){
+        return oldsz;
+    }
+
+    PGGROUNDUP(oldsz);
+
+    for(a = oldsz; a < newsz ; a +=PGSIZE){
+        mem = kalloc();
+
+        if(mem == 0){
+            uvmdealloc(pagetable, a, oldsz);
+            return 0;
+        }
+
+        memset(mem, 0, PGSIZE);
+
+        if(mappages(pagetable, a, PGSIZE, (uint64)mem, PTE_R | PTE_U | xperm) != 0){
+            kfree(mem);
+            uvmdealloc(pagetable, a, oldsz);
+            return 0;
+        }
+    }
+
+    return newsz;
 
 }
 
 
 /*
 summary:
+1) it is use to deallocate the page to shrink the memory use by a process
+2) it take newsz as the input then from that calculate the number of pages to deallocate
+3) and then deallocate them using the uvmunmap function.
 */
-uint64 uvmdealloc(pagetable_t pagetablem, uint64 oldsz, uint64 newsz){
-    
+uint64 uvmdealloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz){
+    if(newsz >= oldsz){
+        return oldsz;
+    }
+
+    if(PGGROUNDUP(newsz) < PGGROUNDUP(oldsz)){
+        int npages = (PGGROUNDUP(oldsz) - PGGROUNDUP(newsz)) / PGSIZE;
+        uvmunmap(pagetable, PGGROUNDUP(newsz), npages, 1 );
+    }
+
+    return newsz;
 }
 
 

@@ -231,6 +231,36 @@ void userinit(void){
 
 
 /*
+summary
+here it either increase the memory of the process or decrease
+it increase by using the uvmalloc and decrease by using the umvdealloc
+*/
+int growproc(int n){
+    uint64 sz;
+
+    struct proc *p = myproc();
+
+    sz = p->sz;
+
+    if(n>0){
+        if(sz + n > TRAPFRAME){
+            return -1;
+        }
+
+        if((sz = uvmalloc(p->pagetable, sz, sz+n, PTE_W)) == 0){
+            return -1;
+        }
+    }
+    else if(n < 0){
+        sz = uvmdealloc(p->pagetable, sz, sz+n);
+    }
+
+    p->sz = sz;
+    return 0;
+}
+
+
+/*
 summary:
 */
 void forkret(void){
