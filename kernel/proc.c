@@ -186,7 +186,7 @@ summary
 and storing its address in the pagetable variable.
 2) 
 */
-pagetable_t proc_pagetable(){
+pagetable_t proc_pagetable(struct proc *p){
     pagetable_t pagetable;
 
     // uvmcreate the root page table so here pagetable stores the address 
@@ -285,5 +285,32 @@ void sleep(void *chan, struct spinlock *lk){
 summary:
 */
 void wakeup(void *chan){
+    
+}
+
+/*
+summary:
+it returns the killed's value, when due to some reason kernel has to terminate a process or
+if process is completed then kernel set the killed value to 1. which tell kernel later that we 
+can terminate the process.
+
+so this function return the value of the killed attribute of the proc struct.
+
+killed = 1 means process can be terminate
+*/
+int killed(struct proc* p){
+    int k;
+
+    acquire(&p->lock);
+    k = p->killed;
+    release(&p->lock);
+
+    return k;
+}
+
+/*
+summary
+*/
+void kexit(int status){
     
 }

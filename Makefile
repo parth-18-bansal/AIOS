@@ -4,7 +4,7 @@ U = user
 
 # objs is list of the whitespace seperated list of the words.
 # end here it get expand like this kernel/vm.o
-objs = \
+OBJS = \
 	$K/entry.o \
 	$K/start.o \
 	$K/kalloc.o \
@@ -85,6 +85,14 @@ endif
 
 LDFLAGS = -z max-page-size=4096
 
+
+
+#
+########################################################
+           # linking
+########################################################
+#
+
 #kernel.ld is the linker script
 # kernel.ld tells the linker where different sections of the kernel should be placed in the 
 # memory
@@ -104,7 +112,19 @@ $K/kernel: $(OBJS) $K/kernel.ld
 	    $(OBJDUMP) -t $K/kernel | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $K/kernel.sym
 
 
-# this is to generate the .o file from the .c file
+
+
+
+#
+########################################################
+          # .S -> .o
+########################################################
+#
+
+# this is to generate the .o file from the .S file
+# there is no rule for .c to .o because make have already a default rule for it so we don't
+# need to define
+# we can see the defualt rules of make via this make -p -f /dev/null
 $K/%.o: $K/%.S
 		$(CC) -march=rv64gc -g -c -o $@ $<
 
@@ -135,6 +155,16 @@ clean:
 	*/*.o */*.d */*.asm */*.sym \
 	$K/kernel
 
+
+
+
+
+#
+########################################################
+           # GDB Settings
+########################################################
+#
+
 # try to generate a unique GDB port
 # GDB is the debugging tool, and we are setting the port for it
 GDBPORT = $(shell expr `id -u` % 5000 + 25000)
@@ -143,5 +173,54 @@ GDBPORT = $(shell expr `id -u` % 5000 + 25000)
 QEMUGDB = $(shell if $(QEMU) -help | grep -q '^-gdb'; \
 	then echo "-gdb tcp::$(GDBPORT)"; \
 	else echo "-s -p $(GDBPORT)"; fi)
+
+
+
+ifndef CPUS
+CPUS := 3
+endif
+
+# -machine virt means create a virtual machine
+# -bios none means there is no bios and -kernel means use this kernel
+# -128M = 128 MB RAM, -smp = symmetric multiprocessing which define number of the cpus
+# -nographic = do not create graphical display window(GUI) instead we interact via console/terminal
+# virtio is for the storage disk
+#  
+QEMUOPTS = -machine virt -bios none -kernel $K/kernel -m 128M -smp $(CPUS) -nographic
+QEMUOPTS += -global virtio-mmio.force-legacy=false
+#QEMUOPTS += -drive file=fs.img,if=none,format=raw,id=x0
+#QEMUOPTS += -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
+
+
+#
+########################################################
+           # command to create the VM
+########################################################
+#
+qemu: check-qemu-version $K/kernel
+	$(QEMU) $(QEMUOPTS)
+
+
+.gdbinit: .gdbinit.tmpl-riscv
+	sed "s/:1234/:$(GDBPORT)/" < $^ > $@
+
+qemu-gdb: $K/kernel .gdbinit fs.img
+	@echo "*** Now run 'gdb' in another window." 1>&2
+	$(QEMU) $(QEMUOPTS) -S $(QEMUGDB)
+
+print-gdbport:
+	@echo $(GDBPORT)
+
+QEMU_VERSION := $(shell $(QEMU) --version | head -n 1 | sed -E 's/^QEMU emulator version ([0-9]+\.[0-9]+)\..*/\1/')
+check-qemu-version:
+	@if [ "$(shell echo "$(QEMU_VERSION) >= $(MIN_QEMU_VERSION)" | bc)" -eq 0 ]; then \
+		echo "ERROR: Need qemu version >= $(MIN_QEMU_VERSION)"; \
+		exit 1; \
+	fi
+
+.PHONY: fmt
+fmt:
+	clang-format -i $(wildcard kernel/*.[ch] user/*.[ch] mkfs/*.c)
+
 
 
