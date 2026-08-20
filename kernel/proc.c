@@ -225,7 +225,7 @@ summary:
 void userinit(void){
     struct proc *p;
 
-    p = allocprod();
+    p = allocproc();
     initproc = p;
 }
 
@@ -312,5 +312,5 @@ int killed(struct proc* p){
 summary
 */
 void kexit(int status){
-    
+       
 }

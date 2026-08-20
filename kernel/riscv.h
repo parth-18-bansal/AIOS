@@ -88,6 +88,7 @@ w_sie(uint64 x)
 
 
 #define SSTATUS_SIE (1L << 1) //supervisor interrupt enable(global interrupt enable/disable)
+#define SSTATUS_SPP  (1L << 8) // Previous mode, 1=Supervisor, 0=User
 
 
 static inline uint64 r_sstatus(){
@@ -163,6 +164,16 @@ static inline uint64 r_scause(){
     uint64 x;
     asm volatile("csrr %0, scause" : "=r"(x));
     return x;
+}
+
+// Supervisor Trap Value
+// stores the extra information about the trap
+static inline uint64
+r_stval()
+{
+  uint64 x;
+  asm volatile("csrr %0, stval" : "=r"(x));
+  return x;
 }
 
 // Machine Exception Delegation
