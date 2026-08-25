@@ -89,6 +89,7 @@ w_sie(uint64 x)
 
 #define SSTATUS_SIE (1L << 1) //supervisor interrupt enable(global interrupt enable/disable)
 #define SSTATUS_SPP  (1L << 8) // Previous mode, 1=Supervisor, 0=User
+#define SSTATUS_SPIE (1L << 5) // it store whether interrupt were enable or not before the trap
 
 
 static inline uint64 r_sstatus(){

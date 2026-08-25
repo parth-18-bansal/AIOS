@@ -2,7 +2,9 @@
 #include "proc.h"
 #include "defs.h"
 #include "riscv.h"
+#include "memlayout.h"
 
+extern char trampoline[], uservec[];
 
 /*
 summary:
@@ -77,10 +79,38 @@ uint64 usertrap(void){
         kexit(-1);
     }
 
+    prepare_return();
+
     // switch the pagetable to the user process page table
     uint64 satp = MAKE_SATP(p->pagetable);
 
     return satp;
-
-
 }
+
+
+/*
+summary:
+*/
+
+void prepare_return(void){
+    struct proc *p = myproc();
+
+    intr_off();
+
+    uint64 trampoline_uservec = TRAMPOLINE + (uservec - trampoline);
+    w_stvec(trampoline_uservec);
+
+    p->trapframe->kernel_satp = r_satp();
+    p->trapframe->kernel_sp = p->kstack + PGSIZE;
+    p->trapframe->kernel_trap = (uint64)usertrap;
+    p->trapframe->kernel_hartid = r_tp();
+
+    unsigned long x = r_sstatus();
+    x &= ~SSTATUS_SPP;
+    x |= SSTATUS_SPIE;
+
+    w_sstatus(x);
+
+    w_sepc(p->trapframe->epc);
+}
+

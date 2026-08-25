@@ -9,3 +9,6 @@ struct proc*     myproc();
 
 // syscall.c
 void             syscall(void);
+
+// trap.c
+void             prepare_return(void);
