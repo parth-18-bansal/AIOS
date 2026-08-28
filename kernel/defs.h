@@ -1,3 +1,9 @@
+struct inode;
+struct proc;
+struct spinlock;
+
+
+
 // kalloc
 void* kalloc(void);
 
@@ -12,3 +18,7 @@ void             syscall(void);
 
 // trap.c
 void             prepare_return(void);
+
+// string.c
+void* memmove(void*, const void*, uint);
+void* memset(void*, int, uint);

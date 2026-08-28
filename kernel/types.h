@@ -3,4 +3,6 @@
 typedef unsigned long uint64;
 typedef unsigned int uint;
 
+typedef unsigned short ushort;
+
 typedef uint64 pde_t;
