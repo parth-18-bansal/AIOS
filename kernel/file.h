@@ -31,6 +31,15 @@ struct inode {
    uint size;
 
    /*
+   file type:
+   there are three types here: 
+   T_DEVICE = device files, file for devices that are exposed via file
+   T_DIR = dir files
+   T_FILE = regular files
+   */
+   short type;
+
+   /*
    number of the hardlinks
 
    Hard link:

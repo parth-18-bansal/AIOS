@@ -71,10 +71,50 @@ static struct inode * iget(uint dev, uint inum){
 
 /*
 summary:
+skipelem = skip element
+it is used to extract the path element from the path and return the remaining path
+
+for example /usr/bin/ls
+then path elements are the usr, bin, ls
+
+then we extract the first path element and stores it in the name, so name = usr
+
+and return the remaing path = bin/ls
 
 */
-static char *skipelem(){
+static char *skipelem(char *path, char *name){
+    char *s;
+    int len;
 
+    while(*path == "/"){
+        path++;
+    }
+
+    if(*path == 0){
+        return 0;
+    }
+
+    s = path;
+    
+    while(*path != "/" && *path != 0){
+        path++;
+    }
+
+    len = path - s;
+
+    if(len>=DIRSIZ){
+        memmove(name, s, DIRSIZ);
+    }
+    else{
+        memmove(name, s, len);
+        name[len] = 0;
+    }
+
+    while(*path == '/'){
+        path++;
+    }
+
+    return path;
 }
 
 /*

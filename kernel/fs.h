@@ -1,8 +1,21 @@
+#define BSIZE //BLOCK SIZE
+
 #define NDIRECT 12
 
 // dirsiz is the length of the filename
 // max file name can be 14 char long
 #define DIRSIZ 14
+
+/*
+this struct is stored in the disk and inode is the copy of this and inode struct get stored
+in the RAM.
+*/
+struct dinode{
+    short type;
+    short nlink;
+    uint size;
+    uint addrs[NDIRECT + 1];
+}
 
 /*
 dirent = directory entry.

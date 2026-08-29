@@ -6,3 +6,4 @@ typedef unsigned int uint;
 typedef unsigned short ushort;
 
 typedef uint64 pde_t;
+typedef unsigned char uchar;
