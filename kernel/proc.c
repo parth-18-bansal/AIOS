@@ -276,9 +276,38 @@ void sched(void){
 
 /*
 summary:
+chan means sleeping channel, it like a label which tell this process is sleeping and this
+is the unique label for it so that when we call wake up this labelel(chan) process then 
+we know which process to wake up.
 */
-void sleep(void *chan, struct spinlock *lk){
+void sleep_prepare(void *chan){
+    struct proc *p = myproc();
 
+    acquire(&p->lock);
+
+    if(chan == 0){
+        panic("sleep_prepare: zero chan");
+    }
+
+    p->chan = chan;
+
+    release(&p->lock);
+}
+
+/*
+summary:
+here we setting the state of the process as sleeping and then calling scheduler
+*/
+void sleep(){
+    struct proc *p = myproc();
+
+    acquire(&p->lock);
+    if(p->chan != 0){
+        p->state = SLEEPING;
+        sched();
+    }
+
+    release(&p->lock);
 }
 
 /*
