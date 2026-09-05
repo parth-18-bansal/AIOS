@@ -312,9 +312,24 @@ void sleep(){
 
 /*
 summary:
+it just wake up the process by changing the chan = 0 and state to RUNNABLE
 */
 void wakeup(void *chan){
-    
+    struct proc *p;
+
+    for (p = proc; p < &proc[NPROC]; p++){
+        acquire(&p->lock);
+
+        if(p->chan == chan){
+            p->chan = 0;
+
+            if(p->state == SLEEPING){
+                p->state = RUNNABLE;
+            }
+        }
+
+        release(&p->lock);
+    }
 }
 
 /*

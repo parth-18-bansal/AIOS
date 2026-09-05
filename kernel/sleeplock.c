@@ -1,6 +1,16 @@
 #include "sleeplock.h"
 #include "defs.h"
 #include "proc.h"
+#include "spinlock.h"
+
+
+void initsleeplock(struct sleeplock *lk, char *name){
+    initlock(&lk->lk, "sleep lock");
+
+    lk->name = name;
+    lk->locked = 0;
+    lk->pid = 0;
+}
 
 /*
 summary:
@@ -30,6 +40,25 @@ void acquiresleep(struct sleeplock *lk){
     release(&lk->lk);
 }
 
+// releasing sleep lock
 void releasesleep(struct sleeplock *lk){
+    acquire(&lk->lk);
+
+    lk->locked = 0;
+    lk->pid = 0;
+
+    wakeup(lk);
     
+    release(&lk->lk);
+}
+
+// it tells whether current process is holding the sleep lock or not
+int holdingsleep(struct sleeplock *lk){
+    int r;
+
+    acquire(&lk->lk);
+    r = lk->locked && (lk->pid == myproc()->pid);
+    release(&lk->lk);
+
+    return r;
 }
