@@ -2,6 +2,7 @@
 // means in place of the unsigned long i can use uint64 it means same.
 typedef unsigned int uint32;
 typedef unsigned long uint64;
+typedef unsigned short uint16;
 typedef unsigned int uint;
 
 typedef unsigned short ushort;
