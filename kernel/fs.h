@@ -1,4 +1,4 @@
-#define BSIZE //BLOCK SIZE
+#define BSIZE 1024 //BLOCK SIZE
 
 #define NDIRECT 12
 
@@ -15,7 +15,7 @@ struct dinode{
     short nlink;
     uint size;
     uint addrs[NDIRECT + 1];
-}
+};
 
 /*
 dirent = directory entry.

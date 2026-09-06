@@ -202,6 +202,23 @@ static void free_desc(int i){
 }
 
 /*
+summary: it free complete descriptor chain
+*/
+static void free_chain(int i){
+    while(1){
+        int flag = disk.desc[i].flags;
+        int nxt = disk.desc[i].next;
+        free_desc(i);
+        if(flag & VRING_DESC_F_NEXT){
+            i = nxt;
+        }
+        else{
+            break;
+        }
+    }
+}
+
+/*
 summary:
 here we allocating 3 descriptor per request
 1st desc = virtio blk req
@@ -302,5 +319,43 @@ void virtio_disk_rw(struct buf *b, int write){
     disk.desc[idx[2]].flags = VRING_DESC_F_WRITE;
     disk.desc[idx[2]].next = 0;
 
-    
+    // indicating that disk is interacting with this buffer
+    b->disk = 1;
+
+    disk.info[idx[0]].b = b;
+
+    /*
+    idx increase without limit so by remainder division we are getting value between the 
+    0 to NUM
+    */
+    disk.avail->ring[disk.avail->idx % NUM] = idx[0];
+
+    // io_fence make sure that disk.avail->idx +=1 execute before notification steps
+    // and after the discriptor creations steps
+    io_fence();
+
+    disk.avail->idx += 1;
+
+    io_fence();
+
+    // here we are notifying the device there is new request in the zeroth queue
+    *R(VIRTIO_MMIO_QUEUE_NOTIFY) = 0;
+
+    /*
+    here we have notified the disk about the new request now disk will handle the request
+    on it own no help is needed from the cpu side so we make the process sleep
+    and before that we release the lock on the disk struct.
+    */
+    while(b->disk == 1){
+        sleep_prepare(b);
+        release(&disk.vdisk_lock);
+        sleep(); // then process is wakeup by the virtio_disk_intr handler
+        acquire(&disk.vdisk_lock);
+    }
+
+    disk.info[idx[0]].b = 0;
+
+    free_chain(idx[0]);
+
+    release(&disk.vdisk_lock);
 }

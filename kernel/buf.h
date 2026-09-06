@@ -1,3 +1,5 @@
+#include "sleeplock.h"
+
 /*
 buf is the buffer cache, kernel cache the block of the disk in the RAM, so that
 it does not have to access the disk again and again for the data
@@ -7,6 +9,11 @@ struct buf{
     uint dev;  // device number
     uint blockno; // disk is divided into multiple blocks so block no
     uint refcnt;  // reference count, how many kernel components are refering it at a time.
+
+    // disk indicate whether disk controller is writing or reading data from the buf or not
+    // if disk controller is interacting with that buffer then other process can not use it
+    int disk;
+    struct sleeplock lock;
     
     /*
     it is used to implement the LRU cache = least recently used cache

@@ -30,6 +30,7 @@
 #define VIRTIO_RING_F_EVENT_IDX     29
 
 // queue
+#define VIRTIO_MMIO_QUEUE_NOTIFY	0x050 // write-only
 #define VIRTIO_MMIO_QUEUE_SEL		0x030 // select queue, write-only
 #define VIRTIO_MMIO_QUEUE_READY		0x044 // ready bit
 #define VIRTIO_MMIO_QUEUE_NUM_MAX	0x034 // max size of current queue, read-only
@@ -64,7 +65,8 @@ struct virtq_desc{
 };
 
 struct virtq_avail{
-
+  uint idx; // it is track the number of request, so with a new request we increase it by 1
+  uint ring[NUM]; // descriptor numbers of chain heads, from here device get know new request has come
 };
 
 struct virtq_used_elem{

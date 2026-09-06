@@ -240,6 +240,11 @@ static inline void w_pmpaddr0(uint64 x){
     asm volatile("csrw pmpaddr0, %0" : : "r"(x));
 }
 
+// fence for memory-mapped IO
+static inline void io_fence(){
+  asm volatile("fence iorw, iorw" ::: "memory");
+}
+
 
 
 
