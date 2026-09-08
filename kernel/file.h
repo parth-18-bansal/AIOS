@@ -18,6 +18,8 @@ struct inode {
    */
    int ref;
 
+   struct sleeplock lock;
+
    /*
    valid tells whether we have copied the inode from the disk or not
    here we have two functions iget() and ilock(), iget() creates in-memory

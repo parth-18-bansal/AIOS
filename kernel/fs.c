@@ -2,6 +2,7 @@
 #include "file.h"
 #include "spinlock.h"
 #include "param.h"
+#include "sleeplock.h"
 
 
 /*
@@ -11,6 +12,21 @@ struct{
     struct spinlock lock;
     struct inode inode[NINODE];
 } itable;
+
+/*
+summary:
+*/
+void iinit(){
+    int i = 0;
+
+    initlock(&itable.lock, "itable");
+
+    for(i = 0; i < NINODE; i++){
+        initsleeplock(&itable.inode[i].lock, "inode");
+    }
+}
+
+static struct inode *iget(uint dev, uint inum);
 
 
 struct inode *idup(struct inode *ip){
@@ -68,6 +84,28 @@ static struct inode * iget(uint dev, uint inum){
 
     return ip;
 };
+
+/*
+summary:
+*/
+void ilock(struct inode *ip){
+    struct buf *bp;
+    struct dinode *dip;
+
+    if(ip == 0 || ip->ref < 1){
+        painc("ilock");
+    }
+
+    acquiresleep(&ip->lock);
+
+    /*
+    if inode has not been copied in the ram from the disk then it will first read the disk
+    block and cached it in the buffer then copied the values of the dinode into the inode.
+    */
+    if(ip->valid == 0){
+        bp = bread(ip->dev, )
+    }
+}
 
 /*
 summary:

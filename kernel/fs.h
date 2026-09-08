@@ -17,6 +17,19 @@ struct dinode{
     uint addrs[NDIRECT + 1];
 };
 
+
+/*
+IPB = inode per block
+so here we are calculating how many inodes are stored in one disk block
+so blocksize / size of one inode 
+*/
+#define IPB (BSIZE / sizeof(struct dinode))
+
+
+/*
+*/
+#define IBLOCK(i, )
+
 /*
 dirent = directory entry.
 directory is a file that contains the records(dirent)
