@@ -7,6 +7,30 @@
 #define DIRSIZ 14
 
 /*
+Layout of the disk is like this:
+Boot block | super block | log | inode blocks | free bit map | data blocks
+
+bit map tracks which data block is free and which data block is empty, here if bit value
+is 0 then crossponding datablock is empty and if bit value is 1 then corresponding data block
+is filled.
+
+so super block stores the information like where are data blocks where are inodes block etc
+*/
+struct superblock{
+    uint magic;  // it should be equal to the FSMAGIC VALUE
+    uint size;  // total number of blocks
+    uint nblocks; // number of the data blocks
+    uint ninodes;  // number of inodes block
+    uint nlog;  // number of log blocks
+    uint logstart;  // block number of first log block
+    uint inodestart;  // block number of first inode block
+    uint bmapstart;  // block number of first free map block
+};
+
+
+#define FSMAGIC 0x10203040
+
+/*
 this struct is stored in the disk and inode is the copy of this and inode struct get stored
 in the RAM.
 */
@@ -27,8 +51,9 @@ so blocksize / size of one inode
 
 
 /*
+it finds in which disk block ith inode is stored
 */
-#define IBLOCK(i, )
+#define IBLOCK(i, sb) ((i) / IPB + sb.inodestart)
 
 /*
 dirent = directory entry.

@@ -1,4 +1,5 @@
 #include "sleeplock.h"
+#include "fs.h"
 
 /*
 buf is the buffer cache, kernel cache the block of the disk in the RAM, so that

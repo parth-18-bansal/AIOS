@@ -5,6 +5,9 @@
 #include "sleeplock.h"
 
 
+struct superblock sb;
+
+
 /*
 itable stores the cached inode in RAM that we fetch from the disk
 */
@@ -103,7 +106,19 @@ void ilock(struct inode *ip){
     block and cached it in the buffer then copied the values of the dinode into the inode.
     */
     if(ip->valid == 0){
-        bp = bread(ip->dev, )
+        // here we are getting the buffer which cached the disk block were that inode is stored
+        bp = bread(ip->dev, IBLOCK(ip->inum, sb));
+
+        // inum % ipb tells the position of the requried inode in that data block.
+        dip = (struct dinode *)bp->data + ip->inum % IPB;
+
+        ip->type = dip->type;
+        ip->major = dip->major;
+        ip->minor = dip->minor;
+        ip->nlink = dip->nlink;
+        ip->size = dip->size;
+
+        
     }
 }
 

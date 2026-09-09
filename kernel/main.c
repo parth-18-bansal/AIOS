@@ -7,6 +7,8 @@ void main(){
     if (cpuid() == 0){
         kvminit();  // creates kernel page table
         kvminithart(); // turn on paging
+        binit();  // creating the buffer cache array
+        iinit();  // creating the inode array
         userinit(); // start first user process
     }
 }
