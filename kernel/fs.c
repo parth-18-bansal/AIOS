@@ -90,6 +90,8 @@ static struct inode * iget(uint dev, uint inum){
 
 /*
 summary:
+this function is just to acquire the lock of the inode. and if inode does not have the disk
+dinode data then we copies the data from the disk to the buffer then to the inode(RAM).
 */
 void ilock(struct inode *ip){
     struct buf *bp;
@@ -118,7 +120,15 @@ void ilock(struct inode *ip){
         ip->nlink = dip->nlink;
         ip->size = dip->size;
 
-        
+        memmove(ip->addrs, dip->addrs, sizeof(ip->addrs));
+
+        brelse(bp);
+
+        ip->valid = 1;
+
+        if(ip->type == 0){
+            panic("ilock: no type");
+        }
     }
 }
 

@@ -41,6 +41,10 @@ struct inode {
    */
    short type;
 
+
+   short major;
+   short minor;
+
    /*
    number of the hardlinks
 

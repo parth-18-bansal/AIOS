@@ -39,6 +39,16 @@ struct dinode{
     short nlink;
     uint size;
     uint addrs[NDIRECT + 1];
+
+    /*
+    major, minor number are only applicable to device file
+    major number helps the kernel to find crossponding driver
+    and minor number helps the driver to find the instance of the that device like
+    sda disk can have multiple instances sda1. sda2, etc so minor tell which instance of that
+    device. 
+    */
+    short major;
+    short minor;
 };
 
 
