@@ -1,6 +1,11 @@
 #define BSIZE 1024 //BLOCK SIZE
 
+// number of direct address
 #define NDIRECT 12
+
+// number of indirect address
+#define NINDIRECT (BSIZE / sizeof(uint))
+
 
 // dirsiz is the length of the filename
 // max file name can be 14 char long
@@ -64,6 +69,12 @@ so blocksize / size of one inode
 it finds in which disk block ith inode is stored
 */
 #define IBLOCK(i, sb) ((i) / IPB + sb.inodestart)
+
+// it tells number of bits in one block, BSSIZE = 1024 Bytes so number of bits 1024*8
+#define BPB (BSIZE * 8)
+
+// it tells in which bitmap block information about block b is stored
+#define BBLOCK(b,sb)  ((b) / BPB + sb.bmapstart)
 
 /*
 dirent = directory entry.

@@ -69,6 +69,8 @@ struct inode {
    so first 12 element of the addrs arrays stores the 12 data block number where
    data is stored and 13 element's is the address of the block which stores
    the remaining data block number.
+
+   addrs stores the disk block numbr
    */
    uint addrs[NDIRECT + 1];
 };

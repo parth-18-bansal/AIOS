@@ -7,6 +7,28 @@
 
 struct superblock sb;
 
+/*
+summary":
+1) first we cached the bitmap block from the disk to buffer 
+2) then we change the value of the crossponding bit to 0.
+3) but this change is in buffer so update the disk with the change we call the log_write().
+*/
+static void bfree(int dev, uint b){
+    struct buf *bp;
+    int bi,m;
+
+    bp = bread(dev, BBLOCK(b,sb));
+    bi = b % BPB;
+    m = 1 << (bi % 8);
+
+    if((bp->data[bi / 8] & m) == 0){
+        panic("freeing free block");
+    }
+
+    bp->data[bi/8] &= ~m;
+    brelse(bp);
+}
+
 
 /*
 itable stores the cached inode in RAM that we fetch from the disk
@@ -130,6 +152,85 @@ void ilock(struct inode *ip){
             panic("ilock: no type");
         }
     }
+}
+
+// unlock the given inode
+void iunlock(struct inode *ip){
+    if(ip = 0 || !holdingsleep(&ip->lock) || ip->ref < 1){
+        panic("iunlock");
+    }
+
+    releasesleep(&ip->lock);
+}
+
+/*
+summary:
+it traverse the addrs array in which block numbers are stored, and mark those blocks
+empty by the help of bfree function.
+*/
+void itrunc(struct inode *ip){
+    int i,j;
+
+    struct buf *bp;
+
+    uint *a;
+
+    for(i = 0; i<NDIRECT; i++){
+        if(ip->addrs[i]){
+            bfree(ip->dev, ip->addrs[i]);
+            ip->addrs[i]=0;
+        }
+    }
+
+    if(ip->addrs[NDIRECT]){
+        bp = bread(ip->dev, ip->addrs[NDIRECT]);
+        a = (uint *)bp->data;
+        for (j=0; j<NINDIRECT; j++){
+            if(a[j]){
+                bfree(ip->dev, a[j]);
+            }
+        }
+
+        brelse(bp);
+        bfree(ip->dev, ip->addrs[NDIRECT]);
+        ip->addrs[NDIRECT] = 0;
+    }
+
+    ip->size = 0;
+
+    iupdate(ip);
+}
+
+/*
+summary:
+here if we modified the in memory inode then we are copying those changes in the dinode(disk)
+It should be run aftre every change
+ 
+*/
+void iupdate(struct inode *ip){
+    struct buf *bp;
+    struct dinode *dip;
+
+    bp = bread(ip->dev, IBLOCK(ip->inum, sb));
+
+    dip = (struct dinode *)bp->data + ip->inum % IPB;
+
+    dip->type = ip->type;
+    dip->major = ip->major;
+    dip->minor = ip->minor;
+    dip->nlink = ip->nlink;
+    dip->size = ip->size;
+
+    memmove(dip->addrs, ip->addrs, sizeof(ip->addrs));
+
+    brelse(bp);
+}
+
+/*
+summary:
+*/
+void iput(struct inode *ip){
+
 }
 
 /*
