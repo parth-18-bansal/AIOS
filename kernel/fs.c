@@ -228,9 +228,60 @@ void iupdate(struct inode *ip){
 
 /*
 summary:
+this function free the dinode from the disk. and type = 0 means dinode is free.
+*/
+static void ifree(uint dev, uint inum){
+    struct buf *bp = bread(dev, IBLOCK(inum, sb));
+    struct dinode *dip = (struct dinode *)bp->data + inum % IPB;
+
+    dip->type = 0;
+
+    brelse(bp);
+}
+
+/*
+summary: iput means putting back inode, so here we just decreasing the reference count
+of the in memory inode, ,means we have used the inode and now we are putting it back.
+
+and if it is last reference and nlink is also 0 then we are freeing the inode means
+removing the dinode from the disk because nlink is 0 so no files is connected to that
+dinode.
 */
 void iput(struct inode *ip){
+    acquire(&itable.lock);
 
+    int last = (ip->ref == 1 && ip->valid && ip->nlink == 0);
+    uint dev = ip->dev, inum = ip->inum;
+
+    if(last){
+        acquiresleep(&ip->lock);
+        release(&itable.lock);
+
+        itrunc(ip);
+
+        ip->valid = 0;
+
+        releasesleep(&ip->lock);
+
+        acquire(&itable.lock);
+    }
+
+    ip->ref--;
+
+    release(&itable.lock);
+
+    if(last){
+        ifree(dev,inum);
+    }
+
+}
+
+void iunlockput(struct inode *ip){
+    iunlock(ip);
+    iput(ip);
+
+
+    
 }
 
 /*
