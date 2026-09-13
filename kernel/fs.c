@@ -3,6 +3,7 @@
 #include "spinlock.h"
 #include "param.h"
 #include "sleeplock.h"
+#include "buf.h"
 
 
 struct superblock sb;

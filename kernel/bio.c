@@ -1,6 +1,6 @@
-#include <spinlock.h>
-#include <buf.h>
-#include <param.h>
+#include "spinlock.h"
+#include "buf.h"
+#include "param.h"
 
 
 /*
@@ -128,4 +128,16 @@ brelse(struct buf *b){
     }
 
     release(&bcache.lock);
+}
+
+/*
+this copy the content of the buffer into the actual disk block
+and only log can call bwrite, means write to disk only happen after logging
+*/
+void bwrite(struct buf *b){
+    if(!holdingsleep(&b->lock)){
+        panic("bwrite");
+    }
+
+    virtio_disk_rw(b,1);
 }
