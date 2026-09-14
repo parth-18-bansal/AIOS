@@ -199,7 +199,71 @@ static void commit(){
 
 /*
 summary:
+1) here first we are checking whether commiting is happening or not, if yes the process go
+for sleep
+2) if number of blocks modified + expected number of blocks that can be modified > maximum
+number of log blocks then process go for sleep
+3) other wise it just increase outstanding count.
 */
 void begin_op(void){
-    
+    acquire(&log.lock);
+
+    while(1){
+        if(log.committing){
+            sleep_prepare(&log);
+            release(&log.lock);
+            sleep();
+            acquire(&log.lock);
+        }
+
+        else if(log.lh.n + (log.outstanding + 1)*MAXOPBLOCKS > LOGBLOCKS){
+            sleep_prepare(&log);
+            release(&log.lock);
+            sleep();
+            acquire(&log.lock);
+        }
+
+        else{
+            log.outstanding += 1;
+            release(&log.lock);
+            break;
+        }
+    }
+}
+
+/*
+summary:
+it just decrease the outstanding count by 1, and wakeup all process that are sleeping on
+log channel
+2) and if outstanding count becomes 0 then it call commiting
+*/
+void end_op(void){
+    int do_commit = 0;
+
+    acquire(&log.lock);
+
+    log.outstanding -= 1;
+    if(log.committing){
+        panic("log.committing");
+    }
+
+    if(log.outstanding == 0){
+        do_commit = 1;
+        log.committing = 1;
+    }
+
+    else{
+        wakeup(&log);
+    }
+
+    release(&log.lock);
+
+    if(do_commit){
+        commit();
+        acquire(&log.lock);
+        log.committing = 0;
+        log.ncommit += 1;
+        wakeup(&log);
+        release(&log.lock);
+    }
 }
