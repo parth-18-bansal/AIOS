@@ -72,6 +72,32 @@ void initlog(int dev, struct superblock *sb){
 
 /*
 summary:
+1) first we are creating buffers of the log blocks
+2) we are updated buffers that are already created and updated
+3) now we copying the changes from disk blocks buffers to the log blocks buffers
+4) writing back those changes to the disk log blocks
+
+so copying the changes from the modified buffers to log blocks
+
+file operation --> executed in buffers --> (here) copying those changes to log blocks
+*/
+static void write_log(void){
+    int tail;
+
+    for(tail = 0; tail < log.lh.n; tail++){
+        struct buf *to = bread(log.dev, log.start + tail + 1); // log block
+        struct buf *from = bread(log.dev, log.lh.block[tail]); // cache buffer
+
+        memmove(to->data, from->data, BSIZE);
+
+        bwrite(to);
+        brelse(from);
+        brelse(to);
+    }
+}
+
+/*
+summary:
 here we are reading the log header from the disk's log header and copying it into
 in-memory log header( that is log header defined in the log struct)
 */
@@ -111,4 +137,69 @@ static void write_head(void){
 
     bwrite(buf);
     brelse(buf);
+}
+
+/*
+summmary:
+copy the log blocks and pasting it into disk blocks like inode, data, bitmaps
+*/
+static void install_trans(int recovering){
+    int tail;
+
+    for(tail = 0; tail < log.lh.n; tail++){
+        if(recovering){
+            printk("recovering tail %d dst %d\n", tail, log.lh.block[tail]);
+        }
+
+        struct buf *lbuf = bread(log.dev, log.start + tail + 1); // log buffer
+        struct buf *dbuf = bread(log.dev, log.lh.block[tail]); // disk data, inode ,bitmap buffer
+
+        memmove(dbuf->data, lbuf->data, BSIZE); // copy log block into dst blocks
+
+        bwrite(dbuf);
+
+        // bunpin in recoring = 0 because recovering indicates that whether there is crash or
+        // before install_trans
+
+        // and if crash occured then ram is gone so buffer is in ram so buffer is also gone
+        // bpin or unpin has no significance in that case.
+        if(recovering == 0){
+            bunpin(dbuf);
+        }
+
+        brelse(lbuf);
+        brelse(dbuf);
+    }
+}
+
+/*
+if crash happens then we run this to make sure disk inconsistency don't happen.
+*/
+static void recover_from_log(void){
+    read_head();
+
+    // if committed then copy from the log to disk
+    install_trans(1);
+    log.lh.n=0;
+    write_head();
+}
+
+/*
+commiting is copying the changes from buffer to log block to actual disk blocks
+*/
+static void commit(){
+    if(log.lh.n > 0){
+        write_log();
+        write_head();
+        install_trans(0);
+        log.lh.n = 0;
+        write_head();
+    }
+}
+
+/*
+summary:
+*/
+void begin_op(void){
+    
 }

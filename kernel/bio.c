@@ -141,3 +141,20 @@ void bwrite(struct buf *b){
 
     virtio_disk_rw(b,1);
 }
+
+/*
+bpin is used to indicate that the buffer is in use, it is used while commiting in disk
+because if refcnt is 0 then kernel can remove it so by refcnt++ we tell kernel that
+do not remove maybe it get used in logging and committing in the disk
+*/
+void bpin(struct buf *b){
+    acquire(&bcache.lock);
+    b->refcnt++;
+    release(&bcache.lock);
+}
+
+void bunpin(struct buf *b){
+    acquire(&bcache.lock);
+    b->refcnt--;
+    release(&bcache.lock);
+}
