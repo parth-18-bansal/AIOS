@@ -8,6 +8,17 @@
 
 struct superblock sb;
 
+static void bzero(int dev, int bno){
+    struct buf *bp;
+
+    bp = bread(dev,bno);
+    memset(bp->data, 0, BSIZE);
+
+    log_write(bp);
+
+    brelse(bp);
+}
+
 /*
 summary":
 1) first we cached the bitmap block from the disk to buffer 
@@ -27,7 +38,41 @@ static void bfree(int dev, uint b){
     }
 
     bp->data[bi/8] &= ~m;
+
+    log_write(bp);
+
     brelse(bp);
+}
+
+/*
+summary:
+it allocates a free zero data block
+so it traverse the bit map block, and if any block is free then it returns the block number
+of that block
+*/
+static uint balloc(uint dev){
+    int b, bi, m;
+    struct buf *bp;
+
+    bp = 0;
+    for(b = 0; b < sb.size; b += BPB){
+        bp = bread(dev, BBLOCK(b, sb));
+        for(bi = 0; bi < BPB && b + bi < sb.size; bi++){
+            m = 1 << (bi%8);
+            if((bp -> data[bi/8] & m) == 0){
+                bp->data[bi/8] |= m;
+                log_write(bp);
+                brelse(bp);
+                bzero(dev, b+bi);
+                return b + bi;
+            }
+        }
+
+        brelse(bp);
+    }
+
+    printk("balloc: out of blocks\n");
+    return 0;
 }
 
 
@@ -224,6 +269,8 @@ void iupdate(struct inode *ip){
 
     memmove(dip->addrs, ip->addrs, sizeof(ip->addrs));
 
+    log_write(bp);
+
     brelse(bp);
 }
 
@@ -236,6 +283,8 @@ static void ifree(uint dev, uint inum){
     struct dinode *dip = (struct dinode *)bp->data + inum % IPB;
 
     dip->type = 0;
+
+    log_write(bp);
 
     brelse(bp);
 }

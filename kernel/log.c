@@ -267,3 +267,51 @@ void end_op(void){
         release(&log.lock);
     }
 }
+
+/*
+summary:
+this increase the count of the log.lh.n if a block buffer is modified also stores block
+number.
+*/
+void log_write(struct buf *b){
+    int i;
+
+    acquire(&log.lock);
+
+    // checking if we add new block in the list then is it greater or equal to LOGBLOCKS
+    // then do not add new block in the list and give error.
+    // it also prevent MAXOPBLOCKS limit crossing
+    if(log.lh.n >= LOGBLOCKS){
+        panic("too big a transaction");
+    }
+
+    /*
+    if outstanding is zero it means there is no begin_op() without end_op, but for this
+    filesystem operation begin_op has been called so why outstanding is 0 it should atleast 
+    equal to 1, it means log_write has been called without begin_op so error.
+    */
+    if(log.outstanding < 1){
+        panic("log_write outside of trans");
+    }
+
+    // if a block that is modified is already present in the lh.block list then break
+    // because if it is already listed then do not add it again in the array.
+    for(i = 0; i < log.lh.n; i++){
+        if(log.lh.block[i] == b->blockno){
+            break;
+        }
+    }
+
+    // storing the block number in the lh.block array
+    log.lh.block[i] = b->blockno;
+
+    /*
+    only increase the size of log.lh.n if new block is added other wise not
+    */
+    if(i == log.lh.n){
+        bpin(b);
+        log.lh.n++;
+    }
+
+    release(&log.lock);
+}
