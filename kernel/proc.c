@@ -156,6 +156,13 @@ static struct proc * allocproc(void){
 }
 
 /*
+summary:
+*/
+int either_copyout(){
+    
+}
+
+/*
 summary:- it set the value of all the fields in the proc struct to zero. 
 */
 static void freeproc(struct proc *p){

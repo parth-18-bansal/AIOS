@@ -174,6 +174,12 @@ pte_t * walk(pagetable_t pagetable, uint64 va, int alloc){
     return &pagetable[PX(0,va)];
 }
 
+/*
+summary:
+*/
+uint64 walkaddr(pagetable_t pagetable, uint64 va){
+
+}
 
 
 
@@ -378,5 +384,12 @@ void freewalk(pagetable_t pagetable){
         }
     }
     kfree((void *)pagetable);
+}
+
+/*
+summary:
+*/
+int copyout(){
+
 }
 

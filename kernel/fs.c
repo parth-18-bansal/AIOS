@@ -5,6 +5,8 @@
 #include "sleeplock.h"
 #include "buf.h"
 
+#define min(a,b) ((a) < (b) ? (a) : (b))
+
 
 struct superblock sb;
 
@@ -75,6 +77,67 @@ static uint balloc(uint dev){
     return 0;
 }
 
+/*
+summary: 
+here we pass the inode and the nth index of the addrs[] array
+then it returns block number(value stored at nth index) that is store or
+get store in the addrs array 
+*/
+static uint bmap(struct inode *ip, uint bn){
+    uint addr, *a;
+
+    struct buf *bp;
+
+    if(bn < NDIRECT){
+        if((addr = ip->addrs[bn]) == 0){
+            addr = balloc(ip->dev);
+            // returning zero if out of disk
+            if(addr == 0){
+                return 0;
+            }
+            ip->addrs[bn] = addr;
+        }
+
+        return addr;
+    }
+
+    bn -= NDIRECT;
+
+    if(bn < NINDIRECT){
+        /*
+        if there is no indirect addr block i.e block number 13th then creates
+        a indirect block
+        */
+        if((addr = ip->addrs[NDIRECT]) == 0 ){
+            addr = balloc(ip->dev);
+            if(addr == 0){
+                return 0;
+            }
+            ip->addrs[NDIRECT] == addr;
+        }
+
+        bp = bread(ip->dev, addr);
+
+        a = (uint *)bp->data;
+
+        /*
+        if in 13th block there is no address for bn then create a new block
+        */
+        if((addr = a[bn]) == 0){
+            addr = balloc(ip->dev);
+            if(addr){
+                a[bn] = addr;
+                log_write(bp);
+            }
+        }
+
+        brelse(bp);
+        return addr;
+    }
+
+    panic("bmap: out of range");
+
+}
 
 /*
 itable stores the cached inode in RAM that we fetch from the disk
@@ -328,11 +391,16 @@ void iput(struct inode *ip){
 
 void iunlockput(struct inode *ip){
     iunlock(ip);
-    iput(ip);
+    iput(ip);   
+}
 
-
+/*
+summary:
+*/
+int readi(){
     
 }
+
 
 /*
 summary:
