@@ -171,14 +171,62 @@ pte_t * walk(pagetable_t pagetable, uint64 va, int alloc){
         }
     }
 
+    // & means return the address of the PTE not PTE
     return &pagetable[PX(0,va)];
 }
 
 /*
 summary:
+it take the virtual address and return the crossponding physical address
+it only give user space page not kernel space page. and it doesnot allocate page 
+if there is no page at that address then it return 0;
+
+walk can allocate new page but walkaddr can not.
 */
 uint64 walkaddr(pagetable_t pagetable, uint64 va){
+    pte_t *pte;
+    uint64 pa;
 
+    if(va >= MAXVA){
+        return 0;
+    }
+
+    pte = walk(pagetable, va, 0);
+
+    if(pte == 0){
+        return 0;
+    }
+    if((*pte & PTE_V) == 0){
+        return 0;
+    }
+    if((*pte & PTE_U) == 0){
+        return 0;
+    }
+
+    pa = PTE2PA(*pte);
+    return pa;
+}
+
+int ismapped(pagetable_t pagetable, uint64 va){
+    pte_t *pte = walk(pagetable, va, 0);
+
+    if(pte == 0){
+        return 0;
+    }
+
+    if(*pte & PTE_V){
+        return 1;
+    }
+
+    return 0;
+}
+
+
+/*
+summary:
+*/
+uint64 vmfault(pagetable_t pagetable, uint64 psz, uint64 va, int read){
+    
 }
 
 
