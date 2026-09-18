@@ -465,8 +465,57 @@ void freewalk(pagetable_t pagetable){
 
 /*
 summary:
-*/
-int copyout(){
+here src is kernel memory address and psz = process size
 
+copyout copy len byte from kernel space address to user space address
+
+1)first we are finding the user space physcical address of virtual address
+2) then we copy the len bytes from source to destination
+
+** this wlll not work for user to user space copy because if src is in user space the we do not
+have va to pa translation for that src because copyout is kernel function so pagetable at that time
+is of kernel pagetable so we can't translate the src physical address
+*/
+int copyout(pagetable_t pagetable, uint64 psz, uint64 dstva, char *src, uint64 len){
+    uint64 va0, n, pa0;
+    pte_t *pte;
+
+    while(len > 0){
+        va0 = PGGROUNDDOWN(dstva);
+
+        if(va0 >= MAXVA){
+            return -1;
+        }
+
+        pa0 = walkaddr(pagetable, va0);
+
+        if(pa0 == 0){
+            // if vmfalut return 0 means new page can not be mapped so return -1
+            if((pa0 = vmfault(pagetable, psz, va0, 0)) == 0){
+                return -1;
+            }
+        }
+
+        pte = walk(pagetable, va0, 0);
+
+        // if page is readonly then do not copy
+        if((*pte & PTE_W) == 0){
+            return -1;
+        }
+
+        n = PGSIZE - (dstva - va0);
+
+        if(n > len){
+            n = len;
+        }
+
+        memmove((void *)(pa0 + (dstva - va0)), src, n);
+
+        len -= n;
+        src += n;
+        dstva = va0 + PGSIZE;
+    }
+
+    return 0;
 }
 
