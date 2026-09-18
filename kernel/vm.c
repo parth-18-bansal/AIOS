@@ -224,9 +224,38 @@ int ismapped(pagetable_t pagetable, uint64 va){
 
 /*
 summary:
+this function handles page fault
+page fault occurs if va is not mapped and va is not large then process size
+
+so 1) first it check wether va is mapped or not and va is not greater than process size
+   2) after that it allocate new page and mapped the va and pa.
 */
 uint64 vmfault(pagetable_t pagetable, uint64 psz, uint64 va, int read){
-    
+    uint64 mem;
+
+    if(va >= psz){
+        return 0;
+    }
+    va = PGGROUNDDOWN(va);
+
+    if(ismapped(pagetable, va)){
+        return 0;
+    }
+
+    mem = (uint64)kalloc();
+
+    if(mem == 0){
+        return 0;
+    }
+
+    memset((void *)mem , 0, PGSIZE);
+
+    if(mappages(pagetable, va, PGSIZE, mem, PTE_W | PTE_U | PTE_R) != 0){
+        kfree((void *)mem);
+        return 0;
+    }
+
+    return mem;
 }
 
 

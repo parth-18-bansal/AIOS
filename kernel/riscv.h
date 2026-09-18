@@ -308,6 +308,14 @@ and 1L means 64 bit long 1.(L = long)
 #define PTE_X (1L << 3)
 #define PTE_U (1L << 4)  // user can access
 
+
+// it takes the address and convert it into starting address of that page.
+#define PGGROUNDDOWN(a) (((a)) & ~(PGSIZE - 1))
+
+// it gives the starting address of next page or if address i already aligned 
+// then same address
+#define PGGROUNDUP(sz) (((sz) + PGSIZE - 1) & ~(PGSIZE - 1))
+
 /*
 pte = page table entry and each entry in the page table is of 64 bits
 out of 64 bits lower 10 bits are used for flags and rest represent the PPN not PA
