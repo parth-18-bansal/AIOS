@@ -4,6 +4,7 @@
 #include "param.h"
 #include "sleeplock.h"
 #include "buf.h"
+#include "stat.h"
 
 #define min(a,b) ((a) < (b) ? (a) : (b))
 
@@ -456,10 +457,47 @@ int readi(struct inode *ip, int user_dst, uint64 dst, uint off, uint n){
 
 /*
 summary:
+poff = pointer to offset
+
+it is searching the file in the directory and returning that files inode.
 */
-struct inode *dirlookup(){
-    
+struct inode *dirlookup(struct inode *dp, char *name, uint *poff){
+    if(dp->type != T_DIR){
+        panic("dirlookup not DIR");
+    }
+
+    uint off, inum;
+    struct dirent de;
+
+    for(off; off < dp->size; off += sizeof(de)){
+        // dp is the inode of directory and here we are copying one directory entry
+        // into de from that directory file
+        if(readi(dp, 0, (uint64)&de, off, sizeof(de)) != sizeof(de)){
+            panic("dirlookup read");
+        }
+
+        if(de.inum == 0){
+            continue;
+        }
+
+        /*
+        checking whether file name and name of file in directory if yes then
+        return the inode of that file
+
+        also set the byte offset of that file equal to *poff
+        */
+        if(namecmp(name, de.name) == 0){
+            if(poff){
+                *poff = off;
+            }
+            inum = de.inum;
+            return iget(dp->dev, inum);
+        }
+    }
+
+    return 0;
 }
+
 
 /*
 summary:
