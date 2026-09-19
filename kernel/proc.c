@@ -157,9 +157,20 @@ static struct proc * allocproc(void){
 
 /*
 summary:
+it copies the len byte from kernel to kernel or kernel to user space
 */
-int either_copyout(){
-    
+int either_copyout(int user_dst, uint dst, void *src, uint64 len){
+    struct proc *p = myproc();
+
+    // if destination is user then kernel to user copy
+    if(user_dst){
+        return copyout(p->pagetable, p->sz, dst, src, len);
+    }
+    // kernel to kernel copy
+    else{
+        memmove((char *)dst, src, len);
+        return 0;
+    }
 }
 
 /*

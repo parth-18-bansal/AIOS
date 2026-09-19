@@ -395,12 +395,71 @@ void iunlockput(struct inode *ip){
 }
 
 /*
-summary:
+summary: 
+it copy the n bytes form the file starting off offset
 */
-int readi(){
-    
+int readi(struct inode *ip, int user_dst, uint64 dst, uint off, uint n){
+    // tot = number of bytes read so far
+    // m = number of bytes to read in this iteration
+    // n = number of bytes to read
+    // off = offset, from which byte to start reading
+    uint tot, m;
+
+    struct buf *bp;
+
+    /*
+    here we are checking two things:
+    1) if file size is let say 1000 bytes but off is 1200 bytes then starting is outside 
+    the file so return 0
+    2) if off + n < off, here let say uint is 8 bits then 250 + 8 is 4 so to prevent this type of things
+    */
+    if(off > ip->size || off + n < off){
+        return 0;
+    }
+
+    /*
+    here let say offset = 800 bytes and n = 500 bytes and size = 1000 bytes
+    then we decrease the n to 200 bytes because file size is only 1000 bytes
+    */
+    if(off + n > ip->size){
+        n = ip->size - off;
+    }
+
+    for(tot = 0; tot < n; tot += m, off += m, dst += m){
+        // get the block number in which that part of the file is store
+        int addr = bmap(ip, off / BSIZE);
+
+        if(addr == 0){
+            break;
+        }
+
+        // get that block buffer
+        bp = bread(ip->dev, addr);
+
+        /*
+        finding the minimum, to calculate how much to read in this interation
+        */
+        m = min(n - tot, BSIZE - off % BSIZE);
+
+        // copy the data from src to dst
+        if(either_copyout(user_dst, dst, bp->data + (off % BSIZE), m) == -1){
+            // if we can not copy then run break return -1
+            brelse(bp);
+            tot = -1;
+            break;
+        }
+        brelse(bp);
+    }
+
+    return tot;
 }
 
+/*
+summary:
+*/
+struct inode *dirlookup(){
+    
+}
 
 /*
 summary:
@@ -448,6 +507,12 @@ static char *skipelem(char *path, char *name){
     }
 
     return path;
+}
+
+
+// name comparison
+int namecmp(const char *s, const char *t){
+    return strncmp(s, t, DIRSIZ);
 }
 
 /*
