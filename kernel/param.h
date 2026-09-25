@@ -2,6 +2,8 @@
 #define NPROC 64  // max num of processes
 #define NCPU 8    // number of cpus
 
+#define ROOTDEV 1  // device number of file system root disk
+
 #define NINODE 50 // maximum number of active inodes that can be cached in the RAM at a time
 
 #define MAXOPBLOCKS 10  // it is the maximum number of blocks one operation is allowed to modify

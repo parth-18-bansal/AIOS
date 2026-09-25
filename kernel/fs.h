@@ -1,3 +1,4 @@
+#define ROOTINO 1  // root folder inode number
 #define BSIZE 1024 //BLOCK SIZE
 
 // number of direct address

@@ -19,6 +19,9 @@ void             syscall(void);
 // trap.c
 void             prepare_return(void);
 
+// proc.c
+struct proc* myproc();
+
 // string.c
 void* memmove(void*, const void*, uint);
 void* memset(void*, int, uint);

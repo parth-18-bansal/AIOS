@@ -5,6 +5,8 @@
 #include "sleeplock.h"
 #include "buf.h"
 #include "stat.h"
+#include "proc.h"
+#include "defs.h"
 
 #define min(a,b) ((a) < (b) ? (a) : (b))
 
@@ -556,14 +558,82 @@ int namecmp(const char *s, const char *t){
 /*
 summary:
 */
-static struct inode *namex(){
+static struct inode *namex(char *path, int nameiparent, char *name){
+    struct inode *ip, *next;
+
+    /*
+    there can two type of paths: /a/b/c or a/b/c
+    if there is / in the starting then it means path is from root / and if
+    ther is no / in the starting then in means <current working dir>/path
+
+    so here we are storing the inode of the starting folder in ip
+    */
+    if(*path == '/'){
+        ip = iget(ROOTDEV, ROOTINO);
+    }
+    else{
+        ip = idup(myproc()->cwd);
+    }
+
+
+    /*
+    here in path a/b/c or /a/b/c then we are one by one we are traversing the path
+    and at last return the inode of the last or second last folder's inode
+    */
+    while((path = skipelem(path, name)) != 0){
+        ilock(ip);
+
+        if(ip->type != T_DIR){
+            iunlockput(ip);
+            return 0;
+        }
+
+        if(ip->nlink == 0){
+            iunlockput(ip);
+            return 0;
+        }
+
+        /*
+        path is like this a/b/c or /a/b/c
+        now nameiparent means give inode of parent folder means inode of b
+        so if nameiparent is true then gives inode of parent else give inode of "c"
+        */
+        if(nameiparent && *path == '\0'){
+            iunlock(ip);
+            return ip;
+        }
+
+        /*
+        here we are looking the inner directory and storing of inode of inner dir
+        e.g. a/b/c then next stores the inode of b if ip is inode of a.
+        */
+        if((next = dirlookup(ip, name, 0)) == 0){
+            iunlockput(ip);
+            return 0;
+        }
+
+        iunlockput(ip);
+        ip = next;
+    }
+
+    /*
+    this will run if there is no parent like "/" or "" (empty path)
+    */
+    if(nameiparent){
+        iput(ip);
+        return 0;
+    }
+
+    return ip;
+}
+
+struct inode *namei(char *path){
+    char name[DIRSIZ];
+
+    return namex(path, 0, name);
 
 }
 
-/*
-summary:
-*/
-struct inode *namei(){
-    char name[DIRSIZ];
-
+struct inode *nameiparent(char *path, char *name){
+    return namex(path, 1, name);
 }

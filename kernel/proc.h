@@ -134,6 +134,8 @@ struct proc{
     // it stores the address of the variable which stores the uint64 value
     pagetable_t pagetable;
 
+    struct inode *cwd;
+
     struct proc *parent; //parent process
     int killed; //if non-zero, have been killed
     void *chan; // if non zero sleeping on chan
