@@ -13,6 +13,23 @@
 
 struct superblock sb;
 
+// reading the sb and copying at sb
+static void readsb(int dev, struct superblock *sb){
+    struct buf *bp;
+
+    bp = bread(dev, 1);
+
+    memmove(sb, bp->data, sizeof(*sb));
+
+    brelse(bp);
+}
+
+// init fs
+void fsinit(int dev){
+
+}
+
+
 static void bzero(int dev, int bno){
     struct buf *bp;
 
@@ -395,6 +412,13 @@ void iput(struct inode *ip){
 void iunlockput(struct inode *ip){
     iunlock(ip);
     iput(ip);   
+}
+
+/*
+summary:
+*/
+void ireclaim(int dev){
+
 }
 
 /*
