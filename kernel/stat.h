@@ -11,3 +11,11 @@ the corresponding driver and then driver performs tha actual operation on the ha
 #define T_DIR 1    // Directory files
 #define T_FILE 2    // regular files
 #define T_DEVICE 3 //device files
+
+struct stat{
+    int dev;
+    uint ino;
+    short type;
+    short nlink;
+    uint64 size;
+};

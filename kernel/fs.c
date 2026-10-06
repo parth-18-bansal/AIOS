@@ -26,7 +26,17 @@ static void readsb(int dev, struct superblock *sb){
 
 // init fs
 void fsinit(int dev){
+    readsb(dev, &sb);
 
+    if(sb.magic != FSMAGIC){
+        panic("invalid file system");
+    }
+
+    initlog(dev, &sb);
+
+    // before starting the system we make sure that we don't have any orphaned inode from
+    // last session
+    ireclaim(dev);
 }
 
 
@@ -94,6 +104,38 @@ static uint balloc(uint dev){
     }
 
     printk("balloc: out of blocks\n");
+    return 0;
+}
+
+/*
+summary:
+traversing each inode and if there is free inode then set it type and return it.
+and if there is no free inode then return 0.
+*/
+struct inode * ialloc(uint dev, short type){
+    int inum;
+    struct buf *bp;
+    struct dinode *dip;
+
+    // traversing each inode
+    for(inum = 1; inum < sb.ninodes; inum++){
+        bp = bread(dev, IBLOCK(inum, sb));
+
+        // getting the inum inode
+        dip = (struct dinode *)bp->data + inum % IPB;
+
+        if(dip->type == 0){ // type = 0 means free inode
+            memset(dip, 0 , sizeof(*dip));
+            dip->type = type;
+            log_write(bp);
+            brelse(bp);
+            return iget(dev, inum);
+        }
+
+        brelse(bp);
+    }
+
+    printk("ialloc: no inodes\n");
     return 0;
 }
 
@@ -416,9 +458,45 @@ void iunlockput(struct inode *ip){
 
 /*
 summary:
+here we are finding orphaned inode, orphaned inode is one which has 0 nlinks
+and then releasing that inode using the iput function.
+
+some times files linked to the inodes get deleted by dinode is not released so for that
+there is ireclaim
 */
 void ireclaim(int dev){
-    
+    for(int inum =1; inum < sb.ninodes; inum++){
+        struct inode *ip = 0;
+
+        // buffer of disk block where that inode is stored
+        struct buf *bp = bread(dev, IBLOCK(inum, sb));
+
+        // from that block getting ith dinode
+        struct dinode *dip = (struct dinode *)bp->data + inum % IPB;
+
+        if(dip->type != 0 && dip->nlink == 0){
+            print("ireclaim: orphaned inode %d\n", inum);
+            ip = iget(dev,inum);
+        }
+
+        brelse(bp);
+
+        if(ip){
+            begin_op();
+            ilock(ip);
+            iunlock(ip);
+            iput(ip);
+            end_op();
+        }
+    }
+}
+
+void stati(struct inode *ip, struct stat *st){
+    st->dev = ip->dev;
+    st->ino = ip->inum;
+    st->type = ip->type;
+    st->nlink = ip->nlink;
+    st->size = ip->size;
 }
 
 /*

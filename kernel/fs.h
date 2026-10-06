@@ -26,7 +26,7 @@ struct superblock{
     uint magic;  // it should be equal to the FSMAGIC VALUE
     uint size;  // total number of blocks
     uint nblocks; // number of the data blocks
-    uint ninodes;  // number of inodes block
+    uint ninodes;  // number of inodes
     uint nlog;  // number of log blocks
     uint logstart;  // block number of first log block
     uint inodestart;  // block number of first inode block
