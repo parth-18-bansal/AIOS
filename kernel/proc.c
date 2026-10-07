@@ -174,6 +174,20 @@ int either_copyout(int user_dst, uint dst, void *src, uint64 len){
 }
 
 /*
+summary:
+*/
+int either_copyin(void *dst, int user_src, uint64 src, uint64 len){
+    struct proc *p = myproc();
+    if(user_src){
+        return copyin(p->pagetable, p->sz, dst, src, len);
+    }
+    else{
+        memove(dst, (char *)src, len);
+        return 0;
+    }
+}
+
+/*
 summary:- it set the value of all the fields in the proc struct to zero. 
 */
 static void freeproc(struct proc *p){

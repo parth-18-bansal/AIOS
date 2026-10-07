@@ -559,6 +559,35 @@ int readi(struct inode *ip, int user_dst, uint64 dst, uint off, uint n){
     return tot;
 }
 
+
+/*
+summary:
+ip = inode of file
+user_src = src is user-space or kernel-space
+src = buffer containing data to write
+off = offset inside the file
+n = number of bytes to write
+
+to write n bytes in a file. we first need block number in which we have to write then we take the buffer
+of that block and then write in that buf and then we commit changes into the real block.
+*/
+int writei(struct inode *ip, int user_src, uint64 src, uint off, uint n){
+    struct buf *bp;
+    uint tot, m;
+
+    for(tot = 0; tot < n; tot +=m, off +=m, src += m){
+        uint addr = bmap(ip, off / BSIZE );
+
+        if(addr == 0){
+            break;
+        }
+
+        bp = bread(ip->dev, addr);
+
+        m = min(n - tot, BSIZE - off % BSIZE);
+    }
+}
+
 /*
 summary:
 poff = pointer to offset
