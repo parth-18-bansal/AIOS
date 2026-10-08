@@ -67,3 +67,38 @@ int strncmp(const char *p, const char *q, uint n){
 
     return (uchar)*p - (uchar)*q;
 }
+
+/*
+s = destination
+t = source
+n = number of character to copy
+
+it copy the n character from t to s.
+
+*/
+char *strncpy(char *s, const char *t, int n){
+    // pointer s will change so storing it's starting value in os
+
+    char *os;
+    os = s;
+
+    /*
+    copying n character from t to s
+
+    *s++ = *t++ means
+    *s = *t
+    and then s++ and t++
+    */
+    while(n-- > 0 && (*s++ = *t++) != 0)
+        ;
+
+    /*
+    if character is t get finish and still n > 0 then append \0 in the s
+    */
+    while(n-- > 0){
+        *s++ = 0;
+    }
+
+    // return the starting of string s.
+    return os;
+}

@@ -575,6 +575,16 @@ int writei(struct inode *ip, int user_src, uint64 src, uint off, uint n){
     struct buf *bp;
     uint tot, m;
 
+    // for appending in file off == ip->size
+    // to avoid holes in files
+    if(off > ip->size || off + n < off){
+        return -1;
+    }
+
+    if(off + n > MAXFILE * BSIZE){
+        return -1;
+    }
+
     for(tot = 0; tot < n; tot +=m, off +=m, src += m){
         uint addr = bmap(ip, off / BSIZE );
 
@@ -585,7 +595,32 @@ int writei(struct inode *ip, int user_src, uint64 src, uint off, uint n){
         bp = bread(ip->dev, addr);
 
         m = min(n - tot, BSIZE - off % BSIZE);
+        
+        /*
+        here we are copying the data from user or kerenl to kernel because buffer is in kernel
+        memory, so we are using either_copyin.
+        */
+        if(either_copyin(bp->data + (off % BSIZE),user_src, src, m) == -1){
+            // might have partially updated the block so we need to log it.
+            log_write(bp);
+            brelse(bp);
+            break;
+        }
+
+        log_write(bp);
+        brelse(bp);
     }
+
+    //  increasing the file size in inode
+    if(off > ip->size){
+        ip->size = off;
+    }
+
+
+    // saving the changes of inode into dinode.
+    iupdate(ip);
+
+    return tot;
 }
 
 /*
@@ -629,6 +664,46 @@ struct inode *dirlookup(struct inode *dp, char *name, uint *poff){
     }
 
     return 0;
+}
+
+/*
+summary: it enters the new file entry in the directory inode and dinode
+
+for this first we have to check that is there any file of that name in tha folder or not. then 
+we find the empty entry space and then enter the file in the directory's inode and dinode.
+*/
+int dirlink(struct inode *dp, char *name, uint inum){
+    int off;
+    struct dirent de;
+    struct inode *ip;
+
+    // check there is a file of that name or not already present in folder
+    if((ip = dirlookup(dp, name, 0)) != 0){
+        iput(ip);
+        return -1;
+    }
+
+    // look for an empty dirent.
+    for(off = 0; off < dp->size; off += sizeof(de)) {
+        if(readi(dp, 0, (uint64)&de, off, sizeof(de)) != sizeof(de)){
+            panic("dirlink read");
+        }
+        if(de.inum == 0){
+            break;
+        }
+    }
+
+    // enter the name and inum in the dirent
+    strncpy(de.name, name, DIRSIZ);
+    de.inum = inum;
+
+    // writing the changes into disk
+    if(writei(dp, 0, (uint64)&de, off, sizeof(de)) != sizeof(de)){
+        return -1;
+    }
+
+    return 0;
+
 }
 
 

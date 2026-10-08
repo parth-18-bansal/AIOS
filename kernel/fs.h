@@ -7,6 +7,8 @@
 // number of indirect address
 #define NINDIRECT (BSIZE / sizeof(uint))
 
+#define MAXFILE (NDIRECT + NINDIRECT)
+
 
 // dirsiz is the length of the filename
 // max file name can be 14 char long
