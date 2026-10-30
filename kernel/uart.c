@@ -19,14 +19,14 @@ uart chip.
 #define ReadReg(reg) (*(Reg(reg)))
 
 // it is the transmit holding register: it stores a byte to transmit(output)
-#define THR 0;
+#define THR 0
 
 // it is the receive holding register: it stores a byte to read(input)
 // when uart gets a input byte then it stores it here and then transfer it to the THR for transmit
-#define RHR 0;
+#define RHR 0
 
 // it is interrupt enable register, it means can uart raise interrupt or not
-#define IER 1;
+#define IER 1
 
 // it means does uart can interrupt when there a value get stored in the RHR
 #define IER_RX_ENABLE (1 << 0)
@@ -53,6 +53,18 @@ uart chip.
 
 
 static struct spinlock tx_lock;
+
+
+/*
+summary:
+*/
+void uartwrite(char buf[], int n){
+    int i = 0;
+    while(i < n){
+        WriteReg(THR, buf[i]);
+        i += 1;
+    }
+}
 
 
 /*
