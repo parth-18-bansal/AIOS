@@ -1,5 +1,7 @@
 #include "memlayout.h"
 
+
+
 /*
 reg = register
 uart chip has various registers so we set/get the values of those registers using load/store 
@@ -63,6 +65,29 @@ void uartwrite(char buf[], int n){
     while(i < n){
         WriteReg(THR, buf[i]);
         i += 1;
+    }
+}
+
+
+/*
+summary: 
+uart is chip, in this chip there is a register RHR.
+
+when we write something in terminal which is running QEMU, then QEMU will store
+that we wrote (a byte at a time) in RHR and 0th bit of LSR is change to 1
+
+now uartintr calls uartgetc which reads the value that QEMU stored at RHR and 
+return it.
+*/
+static int uartgetc(void){
+    // is input ready to read
+    // checking the status of RHR by LSR's 0th bit, if 0th bit is 0 then not ready and if 1 then ready
+    if(ReadReg(LSR) & LSR_RX_READY){
+        // returns RHR register's value
+        return ReadReg(RHR);
+    }
+    else{
+        return -1;
     }
 }
 
