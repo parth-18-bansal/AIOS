@@ -2,6 +2,7 @@
 #include "proc.h"
 #include "spinlock.h"
 #include "memlayout.h"
+#include "defs.h"
 
 /*
 creating the process array that will stores info about each process
