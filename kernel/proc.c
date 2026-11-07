@@ -390,3 +390,47 @@ summary
 void kexit(int status){
        
 }
+
+
+/*
+summary: it just print the all the process names, pid, and state in console
+*/
+void procdump(void){
+    static char *states[] = {
+        [UNUSED] = "unused",
+        [USED] = "used",
+        [SLEEPING] = "sleep",
+        [RUNNABLE] = "runble",
+        [RUNNING] = "run    ",
+        [ZOMBIE] = "zombie"
+    };
+
+    struct proc *p;
+    char *state;
+
+    printk("\n");
+
+    for(p = proc; p < &proc[NPROC]; p++){
+        // if process is unused then skip
+        if(p->state == UNUSED){
+            continue;
+        }
+
+        /*
+        if process is other than unused and if p->state is less than number
+        of states in states array and if it is valid state according to 
+        states array then set the state value.
+        */
+        if(p->state >= 0 && p->state < NELEM(states) && states[p->state]){
+            state = states[p->state];
+        }
+
+        // other wise print ???
+        else{
+            state = "???";
+        }
+
+        printk("%d %s %s", p->pid, state, p->name);
+        printk("\n");
+    }
+}
