@@ -1,4 +1,5 @@
 #include "memlayout.h"
+#include "defs.h"
 
 
 
@@ -56,6 +57,12 @@ uart chip.
 
 static struct spinlock tx_lock;
 
+// is uart busy sending?
+static int tx_busy;
+
+// &tx_chan is th wait channel
+static int tx_chan;
+
 
 /*
 summary:
@@ -93,13 +100,32 @@ static int uartgetc(void){
 
 
 /*
-summary:
+summary: it is uart interrupt handler, it will run if we type 
+anything(giving input). or if THR get empty.
 */
 void uartintr(void){
-    ReadReg(ISR);
+    ReadReg(ISR); // acknowledge the interrupt
 
+    /*
+    THR stores a byte to transmit, if THR is busy and any process wants to 
+    transmit, then that process will go for sleep at &tx_chan and when THR
+    gets empty then uartintr will get call and this block will wake all the 
+    processes that are sleeping at &tx_chan*/
     acquire(&tx_lock);
     if(ReadReg(LSR) && LSR_TX_IDLE){
-
+        tx_busy = 0;
+        wakeup(&tx_chan);
+    }
+    release(&tx_lock);
+    
+    // whenever we type something(input) then this will run
+    // although it will run in transmitting case also but in that case 
+    // does not impact anything
+    while (1){
+        int c = uartgetc();
+        if(c == -1){
+            break;
+        }
+        consoleintr(c);
     }
 }
