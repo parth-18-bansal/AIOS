@@ -55,7 +55,10 @@ void consoleintr(int c){
             // e-r = input_buf_size means array is full with unread characters
             // c should not be equal to null character
             if(c != 0 && cons.e - cons.r < INPUT_BUF_SIZE){
-                
+                // converting carriage return to newline because some terminals use \n and some \r
+                c = (c == '\r') ? '\n' : c;
+
+
             }
     }
 }
