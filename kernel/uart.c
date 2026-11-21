@@ -66,6 +66,38 @@ static int tx_chan;
 
 
 /*
+summary: storing the character c in THR, which then read by prink() to echo the character on 
+screen.
+*/
+void uartputc_sync(int c){
+    // here we are checking whether kernel is going or resolving any error or not.
+    if(panicking == 0){
+        /*
+        push_off disables interupts globally, so before storing the character in THR 
+        we are disabling interupts so that while doing nothing can interupt it. 
+        */
+        push_off();
+    }
+
+    // if kernel is in panick state then stop all the works by running infinite loop.
+    if(panicked){
+        for(;;){
+            ;
+        }
+    }
+    /*
+    LSR stores the status, so here we are cheking whether THR register
+    is empty or not
+    */
+    while((ReadReg(LSR) & LSR_TX_IDLE) == 0){
+        ;
+    }
+
+    // if THR register is empty then we are storing c in it, printK() will read it.
+    WriteReg(THR, c);
+}
+
+/*
 summary:
 */
 void uartwrite(char buf[], int n){

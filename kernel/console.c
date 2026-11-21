@@ -30,12 +30,30 @@ struct {
 // to get the ascii value of ctr + key
 #define C(x) ((x) - '@')
 
+#define BACKSPACE 0x100
+
+
+/*
+summary:
+
+*/
+void consputc(int c){
+    if(c == BACKSPACE){
+
+    }
+    else{
+        uartputc_sync(c);
+    }
+}
+
 
 
 /*
 summary:
 */
 void consoleintr(int c){
+    acquire(&cons.lock);
+
     // c stores the character that we get from keyboard
     switch(c){
         /*
@@ -51,6 +69,32 @@ void consoleintr(int c){
             }
             break;
 
+        /*
+        Ctrl + H is backspace and \x7f is also backspace and for both cases we are running shared action
+        block
+        */
+        case C('H'): 
+        case '\x7f':
+            /*
+            here we are checking whether there is something to backspace, because 
+            w means upto this index character are commited and e represents the index that we have
+            written but not commited
+
+            character is commited means kernel can now read the input and work on that input
+            so if input is commited it means kernel has read it and worked on it now we can't 
+            erase the character that kernel already read it or processing it.
+
+            w means upto this point kernel has read the input and kernel read when we press enter(\n)
+            or end of file or if buffer is full
+
+            if there is nothing to erase then we will skip the block.
+            */
+            if(cons.w != cons.e){
+                cons.e--;
+                consputc(BACKSPACE);
+            }
+            break;
+
         default:
             // e-r = input_buf_size means array is full with unread characters
             // c should not be equal to null character
@@ -58,7 +102,30 @@ void consoleintr(int c){
                 // converting carriage return to newline because some terminals use \n and some \r
                 c = (c == '\r') ? '\n' : c;
 
+                //echo back to the user
+                consputc(c);
 
+                // store the input character in buf array
+                /*
+                e++ means first e%size then e++, post increment
+                e will increase even after it reaches size of array, but buf is a circular array
+                so we are storing the value by doing this e%size, so even if e's value gets increase
+                more than size of array the e%size will remain between 0 and size of array.
+                */
+                cons.buf[cons.e++ % INPUT_BUF_SIZE] = c;
+
+                /*
+                if c is next line or end of file(ctr + D is end of file) or 
+                buffer gets full, then we will wake up consoleread()
+                */
+                if(c == '\n' || c == C('D') || cons.e - cons.r == INPUT_BUF_SIZE){
+                    // setting the value w which tells upto which point kernel can read
+                    cons.w = cons.e;
+                    wakeup(&cons.r);
+                }
             }
+            break;
     }
+
+    release(&cons.lock);
 }
