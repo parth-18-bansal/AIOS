@@ -95,6 +95,10 @@ void uartputc_sync(int c){
 
     // if THR register is empty then we are storing c in it, printK() will read it.
     WriteReg(THR, c);
+
+    if(panicking == 0){
+        pop_off();
+    }
 }
 
 /*

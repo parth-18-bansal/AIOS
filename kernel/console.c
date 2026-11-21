@@ -1,4 +1,6 @@
 #include "spinlock.h"
+#include "spinlock.h"
+#include "defs.h"
 
 struct {
     struct spinlock lock;
@@ -35,11 +37,15 @@ struct {
 
 /*
 summary:
-
 */
 void consputc(int c){
     if(c == BACKSPACE){
-
+        // move the cursor one step backward
+        uartputc_sync('\b');
+        // overwrite the existing with space
+        uartputc_sync(' ');
+        // again move the cursor one step backward
+        uartputc_sync('\b');
     }
     else{
         uartputc_sync(c);
@@ -47,9 +53,86 @@ void consputc(int c){
 }
 
 
+/*
+summary: so it copy the bytes from the buffer array to the user-space buffer, this is how a process
+read the input from keyboard.
+
+conputc and uartputc_sync, printk echo the input to screen
+
+so input is going to places, screen and process that want to read it
+*/
+int consoleread(int user_dst, uint64 dst, int n){
+    uint target;
+
+    target = n;
+    int c;
+    char cbuf;
+
+    acquire(&cons.lock);
+
+    while(n > 0){
+        // here we are waiting for interrupt handler to put some uncommited new input in buffer
+        while(cons.r == cons.w){
+            if(killed(myproc())){
+                release(&cons.lock);
+                return -1;
+            }
+
+            sleep_prepare(&cons.r);
+            release(&cons.lock);
+            sleep();
+            acquire(&cons.lock);
+        }
+
+
+        c = cons.buf[cons.r++ % INPUT_BUF_SIZE];
+
+        /*
+        here if c is end of file then we are breaking but we are decreasing read index and again pointing
+        it to ctrl + D, because if again process read then it get ctrl + D and second time read()
+        return with 0.
+        */
+        if(c == C('D')) {
+            if(n < target){
+                cons.r--;
+            }
+            break;
+        }
+
+        cbuf = c;
+
+        // copy the input byte(1 byte) to user-space buffer.
+        if(either_copyout(user_dst, dst, &cbuf, 1) == -1){
+            break;
+        }
+
+        dst++;
+        --n;
+
+        if(c == '\n'){
+            // if whole line is copied from buffer to user buffer then return to user-level read()
+            // it can be possibel we want to read target bytes but if only read n bytes because
+            // \n next line come
+            break;
+        }
+
+    }
+
+    release(&cons.lock);
+
+    return target - n;
+}
+
+
 
 /*
-summary:
+summary: 
+console intr stores the input character in the buffer array and when there is enter, end of file or
+if buffer arrays gets full with unread characters then it wake up consoleread() function.
+
+and if there is ctrl + U, ctrl + H, backspace then it erase the character
+
+and if ctrl + P then it prints the list of running processes
 */
 void consoleintr(int c){
     acquire(&cons.lock);
@@ -63,9 +146,14 @@ void consoleintr(int c){
             procdump();
             break;
 
+        // ctrl + U kill the line means erase complete line
+        // here we are moving the e index back to index that is after /n
+        // and in screen we are erasing all the chracter that are after /n(enter) i.e characters
+        // between w and e index in array. and moving back the cursor to index that is after /n.
         case C('U'):
-            while(){
-
+            while(cons.w != cons.e && cons.buf[(cons.e-1) % INPUT_BUF_SIZE] != '\n'){
+                cons.e--;
+                consputc(BACKSPACE);
             }
             break;
 
