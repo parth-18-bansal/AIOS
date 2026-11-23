@@ -124,6 +124,46 @@ int consoleread(int user_dst, uint64 dst, int n){
 }
 
 
+/*
+summary:
+write() syscall will call this, then this will stores the bytes into buf and then
+uartwrite will store bytes into uart chip from buf, from where bytes can go to different places
+like stdout etc.
+
+here we are transfering data from a program's memory to the destination.
+
+so user_src = to check whether we are transfering data from user space memory(user program)
+or kernel program
+src = starting address from where we have to transfer the data, 
+n = number of bytes
+*/
+int consolewrite(int user_src, uint64 src, int n){
+    // we will transfer the data in a batch of 32 bytes
+    char buf[32];
+    int i = 0;
+
+    while(i < n){
+        int nn = sizeof(buf);
+        
+        /*
+        if number of bytes to transfer are less then 32 bytes then nn = n - i
+        */
+        if(nn > n-i){
+            nn = n-i;
+        }
+
+        // transfering the byte to the buf array.        
+        if(either_copyin(buf, user_src, src+1, nn) == -1){
+            break;
+        }
+
+        uartwrite(buf,nn);
+
+        i = i + nn;
+    }
+}
+
+
 
 /*
 summary: 

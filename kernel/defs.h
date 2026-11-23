@@ -30,6 +30,8 @@ void                prepare_return(void);
 
 // uart.c
 void                uartintr(void);
+void                uartwrite(char [], int);
+void                uartputc_sync(int);
 
 
 // number of element in fixed size array

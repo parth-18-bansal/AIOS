@@ -102,14 +102,34 @@ void uartputc_sync(int c){
 }
 
 /*
-summary:
+summary: it transfer byte from buf array to THR register, one byte at a time.
 */
 void uartwrite(char buf[], int n){
+    acquire(&tx_lock);
+
     int i = 0;
+
+    /*
+    from buf array it stores the bytes into THR register, but one byte at a time.
+    from there it can be read by different destinations like stdout etc.
+    */
     while(i < n){
+        // if there is already a byte stored in THR then process will go for sleep.
+        while(tx_busy != 0){
+            // sleeping at &tx_chan channel
+            sleep_prepare(&tx_chan);
+            release(&tx_lock);
+            sleep();
+            acquire(&tx_lock);
+        }
+
         WriteReg(THR, buf[i]);
         i += 1;
+        // set THR register busy indicating a byte is stored in THR register.
+        tx_busy = 1;
     }
+
+    release(&tx_lock);
 }
 
 
