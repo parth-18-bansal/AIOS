@@ -5,6 +5,7 @@ void main(){
     are using the cpuid() == 0
     */
     if (cpuid() == 0){
+        consoleinit();
         kvminit();  // creates kernel page table
         kvminithart(); // turn on paging
         binit();  // creating the buffer cache array

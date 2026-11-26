@@ -36,12 +36,25 @@ uart chip.
 #define IER_RX_ENABLE (1 << 0)
 
 // it means can uart interrupt when a value get stored in the THR
-#define IER_TX_ENABLE
+#define IER_TX_ENABLE (3 << 0)
+
+
+#define FCR    2
+#define FCR_FIFO_ENABLE (1 << 0)
+#define FCR_FIFO_CLEAR  (3 << 1)
 
 // ISR = interrupt status register
-// it stores the reason of the interrupt like if data input happen then uart stores a value in it
-// on reading that value we can know why interrupt occured
+// it stores the reason of the interrupt like if data input happen then uart stores a value in it.
+// On reading that value we can know why interrupt occured
 #define ISR 2
+
+// by this register we can configure few things in uart chip 
+#define LCR 3
+
+#define LCR_EIGHT_BITS (3 << 8)
+#define LCR_BAUD_LATCH (1 << 7)
+
+
 
 // line status register, it stores the status of the uart chip, 
 // if THR is empty then it is able to store the transmit data so then nth bit will be zero
@@ -63,6 +76,50 @@ static int tx_busy;
 
 // &tx_chan is th wait channel
 static int tx_chan;
+
+extern volatile int panicking;
+extern volatile int panicked;  
+
+
+
+/*
+summary
+*/
+void uartinit(void){
+    /*
+    uart chip has a register whose value controls which events in uart can generate interrupt singal
+    and sends the signal to interrupt controller of CPU
+
+    events like character received, error occured, transmitter is ready etc.
+
+    uart chip ----> interrupt controller ---> cpu.
+    */
+    // disabling interrupts so now no event in uart can generate interrupt signal and sends that to cpu.
+    WriteReg(IER, 0x00);
+
+    // special mode to set baud rate.
+    WriteReg(LCR, LCR_BAUD_LATCH);
+
+    // LSB for baud rate of 38.4K.
+    WriteReg(0, 0x03);
+
+    // MSB for baud rate of 38.4K.
+    WriteReg(1, 0x00);
+
+    // leave set-baud mode,
+    // and set word length to 8 bits, no parity.
+    WriteReg(LCR, LCR_EIGHT_BITS);
+
+    // reset and enable FIFOs.
+    WriteReg(FCR, FCR_FIFO_ENABLE | FCR_FIFO_CLEAR);
+
+
+    // enable transmit and receive interrupts
+    WriteReg(IER, IER_TX_ENABLE | IER_RX_ENABLE);
+
+    initlock(&tx_lock, "uart");
+
+}
 
 
 /*

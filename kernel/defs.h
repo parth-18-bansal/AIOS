@@ -5,6 +5,7 @@ struct spinlock;
 // console.c
 void                consoleintr(int);
 void                consoleputc(int);
+void                consoleinit(void);
 
 // kalloc
 void*               kalloc(void);
@@ -32,6 +33,7 @@ void                prepare_return(void);
 void                uartintr(void);
 void                uartwrite(char [], int);
 void                uartputc_sync(int);
+void                uartinit(void);
 
 
 // number of element in fixed size array
